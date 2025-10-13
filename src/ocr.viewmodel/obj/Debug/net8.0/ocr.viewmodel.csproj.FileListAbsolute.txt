@@ -1,0 +1,12 @@
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.viewmodel\bin\Debug\net8.0\ocr.viewmodel.deps.json
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.viewmodel\bin\Debug\net8.0\ocr.viewmodel.dll
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.viewmodel\bin\Debug\net8.0\ocr.viewmodel.pdb
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.viewmodel\obj\Debug\net8.0\ocr.viewmodel.csproj.AssemblyReference.cache
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.viewmodel\obj\Debug\net8.0\ocr.viewmodel.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.viewmodel\obj\Debug\net8.0\ocr.viewmodel.AssemblyInfoInputs.cache
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.viewmodel\obj\Debug\net8.0\ocr.viewmodel.AssemblyInfo.cs
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.viewmodel\obj\Debug\net8.0\ocr.viewmodel.csproj.CoreCompileInputs.cache
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.viewmodel\obj\Debug\net8.0\ocr.viewmodel.dll
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.viewmodel\obj\Debug\net8.0\refint\ocr.viewmodel.dll
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.viewmodel\obj\Debug\net8.0\ocr.viewmodel.pdb
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.viewmodel\obj\Debug\net8.0\ref\ocr.viewmodel.dll

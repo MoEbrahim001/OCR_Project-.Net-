@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "hcAu4DpWUW2BsfCk1yhy7AWi9z/4Jg/a2uPWnDLBGoA=",
+  "Source": "ocr.webapi",
+  "BasePath": "_content/ocr.webapi",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

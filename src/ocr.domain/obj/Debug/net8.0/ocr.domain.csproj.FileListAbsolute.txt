@@ -1,0 +1,17 @@
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\bin\Debug\net8.0\ocr.domain.deps.json
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\bin\Debug\net8.0\ocr.domain.dll
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\bin\Debug\net8.0\ocr.domain.pdb
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\bin\Debug\net8.0\ocr.model.dll
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\bin\Debug\net8.0\ocr.viewmodel.dll
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\bin\Debug\net8.0\ocr.viewmodel.pdb
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\bin\Debug\net8.0\ocr.model.pdb
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\obj\Debug\net8.0\ocr.domain.csproj.AssemblyReference.cache
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\obj\Debug\net8.0\ocr.domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\obj\Debug\net8.0\ocr.domain.AssemblyInfoInputs.cache
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\obj\Debug\net8.0\ocr.domain.AssemblyInfo.cs
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\obj\Debug\net8.0\ocr.domain.csproj.CoreCompileInputs.cache
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\obj\Debug\net8.0\ocr.domain.csproj.Up2Date
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\obj\Debug\net8.0\ocr.domain.dll
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\obj\Debug\net8.0\refint\ocr.domain.dll
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\obj\Debug\net8.0\ocr.domain.pdb
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\obj\Debug\net8.0\ref\ocr.domain.dll
