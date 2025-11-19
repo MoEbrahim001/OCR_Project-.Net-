@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ocr.model")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8011b88bd5be13e279248659788f95fbcbebbce6")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d6c86c6ea65c930271025ec30d417deacc9bb219")]
 [assembly: System.Reflection.AssemblyProductAttribute("ocr.model")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ocr.model")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
