@@ -17,3 +17,4 @@ C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.core\obj\Debug\net8.0\ocr.core.dll
 C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.core\obj\Debug\net8.0\refint\ocr.core.dll
 C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.core\obj\Debug\net8.0\ocr.core.pdb
 C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.core\obj\Debug\net8.0\ref\ocr.core.dll
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.core\obj\Debug\net8.0\ocr.core.sourcelink.json

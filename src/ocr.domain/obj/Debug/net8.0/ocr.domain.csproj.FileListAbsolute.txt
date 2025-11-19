@@ -15,3 +15,4 @@ C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\obj\Debug\net8.0\ocr.domain
 C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\obj\Debug\net8.0\refint\ocr.domain.dll
 C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\obj\Debug\net8.0\ocr.domain.pdb
 C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\obj\Debug\net8.0\ref\ocr.domain.dll
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.domain\obj\Debug\net8.0\ocr.domain.sourcelink.json

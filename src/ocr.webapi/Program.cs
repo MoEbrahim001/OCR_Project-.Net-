@@ -12,6 +12,7 @@ using Ocr.Domain.UnitOfWork;
 using Ocr.Model;
 using Ocr.Core.Repositories;
 using Ocr.Domain.Repositories;
+using ocr.core.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,14 +27,25 @@ builder.Services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(connString))
 // CORS
 // --------------------
 const string AllowAngular = "AllowAngular";
+const string AllowDevAll = "AllowDevAll";
+
 builder.Services.AddCors(options =>
 {
+    // Strict policy for your Angular app (use this in Production)
     options.AddPolicy(AllowAngular, policy =>
         policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .WithExposedHeaders("Content-Disposition"));
+
+    // Relaxed policy for local development (Swagger, tools, etc.)
+    options.AddPolicy(AllowDevAll, policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .WithExposedHeaders("Content-Disposition"));
 });
+
 
 // --------------------
 // Controllers + JSON
@@ -64,6 +76,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IRecordRepository, RecordRepository>();
 builder.Services.AddScoped<IRecordService, RecordService>();
+builder.Services.AddScoped<IdCardOcrService, IdCardOcrService>();
 
 // HttpClient(s)
 builder.Services.AddHttpClient<IOcrClient, OcrClient>();
@@ -87,14 +100,21 @@ app.MapGet("/", context =>
     context.Response.Redirect("/swagger");
     return Task.CompletedTask;
 });
-
 app.UseHttpsRedirection();
-app.UseCors(AllowAngular);
 
-// IMPORTANT: Do NOT force Content-Type headers here; let MVC negotiate
-// (Removed the custom middleware that added Content-Type/Access-Control-Allow-Origin)
+if (app.Environment.IsDevelopment())
+{
+    // Swagger + any origin allowed in Dev
+    app.UseCors("AllowDevAll");
+}
+else
+{
+    // Only Angular allowed in Prod
+    app.UseCors(AllowAngular);
+}
 
 app.MapControllers();
+
 
 app.Run();
 

@@ -10,3 +10,4 @@ C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.model\obj\Debug\net8.0\ocr.model.d
 C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.model\obj\Debug\net8.0\refint\ocr.model.dll
 C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.model\obj\Debug\net8.0\ocr.model.pdb
 C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.model\obj\Debug\net8.0\ref\ocr.model.dll
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.model\obj\Debug\net8.0\ocr.model.sourcelink.json
