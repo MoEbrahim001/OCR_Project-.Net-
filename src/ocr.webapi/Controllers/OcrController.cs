@@ -20,13 +20,16 @@ public class OcrController : ControllerBase
     private readonly IUnitOfWork _uow;
     private readonly IConfiguration _config;
     private readonly IOcrParser _parser;
+    private readonly IRecordService _records;
 
-    public OcrController(IOcrClient ocr, IUnitOfWork uow, IOcrParser parser, IConfiguration config)
+    public OcrController(IOcrClient ocr, IUnitOfWork uow, IOcrParser parser, IConfiguration config, IRecordService records)
     {
         _ocr = ocr;
         _uow = uow;
         _parser = parser;
         _config = config;
+        _records = records;
+;
     }
 
     // ---------- helpers ----------
@@ -153,50 +156,81 @@ public class OcrController : ControllerBase
     }
 
     // ---------- Import (already existed) ----------
+    //[HttpPost("import")]
+    //[Consumes("multipart/form-data")]
+    //[ProducesResponseType(typeof(RecordDto), StatusCodes.Status201Created)]
+    //public async Task<ActionResult<RecordDto>> Import([FromForm] OcrFileRequest request)
+    //{
+    //    if (request.FrontImage is null || request.FrontImage.Length == 0)
+    //        return BadRequest("frontImage is required");
+
+    //    // Front
+    //    using var frontStream = request.FrontImage.OpenReadStream();
+    //    var frontRaw = await _ocr.ExtractFrontAsync(frontStream, request.FrontImage.FileName, request.FrontImage.ContentType, request.Threshold??120);
+    //    var front = JsonDocument.Parse(frontRaw.RawJson).RootElement;
+
+    //    var entity = new Record
+    //    {
+    //        Name = Get(front, "name"),
+    //        Address = Get(front, "address"),
+    //        IdNumber = Get(front, "ID"),
+    //        DateOfBirth = ParseDate(Get(front, "DOB")),
+    //        PhotoBase64 = Get(front, "image"),
+    //        FaceBase64 = Get(front, "face")
+    //    };
+
+    //    // Back (optional)
+    //    if (request.BackImage is not null && request.BackImage.Length > 0)
+    //    {
+    //        using var backStream = request.BackImage.OpenReadStream();
+    //        var backRaw = await _ocr.ExtractBackAsync(backStream, request.BackImage.FileName, request.BackImage.ContentType, request.Threshold ?? 120);
+    //        var back = JsonDocument.Parse(backRaw.RawJson).RootElement;
+
+    //        entity.Profession = Get(back, "profession");
+    //        entity.Religion = Get(back, "religion");
+    //        entity.Gender = Get(back, "gender");
+    //        entity.MaritalStatus = Get(back, "marital_status");
+    //        entity.EndDate = ParseDate(Get(back, "enddate"));
+
+    //    }
+
+    //    await _uow.Records.AddAsync(entity);
+    //    await _uow.SaveChangesAsync();
+
+    //    var dto = ToDto(entity);
+
+    //    // Location header points to /api/Ocr/{id} now that we have GetOne here
+    //    return CreatedAtAction(nameof(GetOne), new { id = entity.Id }, dto);
+    //}
+    // ---------- Import (refactored) ----------
     [HttpPost("import")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(RecordDto), StatusCodes.Status201Created)]
-    public async Task<ActionResult<RecordDto>> Import([FromForm] OcrFileRequest request)
+    public async Task<ActionResult<RecordDto>> Import(
+        [FromForm] OcrFileRequest request,
+        CancellationToken ct = default)
     {
         if (request.FrontImage is null || request.FrontImage.Length == 0)
             return BadRequest("frontImage is required");
 
-        // Front
-        using var frontStream = request.FrontImage.OpenReadStream();
-        var frontRaw = await _ocr.ExtractFrontAsync(frontStream, request.FrontImage.FileName, request.FrontImage.ContentType, request.Threshold??120);
-        var front = JsonDocument.Parse(frontRaw.RawJson).RootElement;
+        if (request.BackImage is null || request.BackImage.Length == 0)
+            return BadRequest("backImage is required"); // ?? ???? ???? ????? ??????
 
-        var entity = new Record
-        {
-            Name = Get(front, "name"),
-            Address = Get(front, "address"),
-            IdNumber = Get(front, "ID"),
-            DateOfBirth = ParseDate(Get(front, "DOB")),
-            PhotoBase64 = Get(front, "image"),
-            FaceBase64 = Get(front, "face")
-        };
+        var threshold =
+            request.Threshold
+            ?? _config.GetValue<int?>("Ocr:DefaultThreshold")
+            ?? 120;
 
-        // Back (optional)
-        if (request.BackImage is not null && request.BackImage.Length > 0)
-        {
-            using var backStream = request.BackImage.OpenReadStream();
-            var backRaw = await _ocr.ExtractBackAsync(backStream, request.BackImage.FileName, request.BackImage.ContentType, request.Threshold ?? 120);
-            var back = JsonDocument.Parse(backRaw.RawJson).RootElement;
+        var rec = await _records.ImportAsync(
+            request.FrontImage,
+            request.BackImage,
+            threshold,
+            ct);
 
-            entity.Profession = Get(back, "profession");
-            entity.Religion = Get(back, "religion");
-            entity.Gender = Get(back, "gender");
-            entity.MaritalStatus = Get(back, "marital_status");
-            entity.EndDate = ParseDate(Get(back, "enddate"));
-            
-        }
+        var dto = ToDto(rec);
 
-        await _uow.Records.AddAsync(entity);
-        await _uow.SaveChangesAsync();
-
-        var dto = ToDto(entity);
-
-        // Location header points to /api/Ocr/{id} now that we have GetOne here
-        return CreatedAtAction(nameof(GetOne), new { id = entity.Id }, dto);
+        return CreatedAtAction(nameof(GetOne), new { id = rec.Id }, dto);
     }
+
+
 }

@@ -60,12 +60,13 @@ namespace Ocr.Core.Services
             }
 
             // Map Python keys (snake_case) → our DTO (camelCase)
-            var proffession = Clean(Get("profession", "proffession"));
-            var gender = Clean(Get("gender"));
-            var religion = Clean(Get("religion"));
-            var marital = Clean(Get("marital_status", "maritalStatus"));
-            var husbandName = Clean(Get("husband_name", "husbandName"));
+            var proffession = StripLeadingNoise(Clean(Get("profession", "proffession")));
+            var gender = StripLeadingNoise(Clean(Get("gender")));
+            var religion = StripLeadingNoise(Clean(Get("religion")));
+            var marital = StripLeadingNoise(Clean(Get("marital_status", "maritalStatus")));
+            var husbandName = StripLeadingNoise(Clean(Get("husband_name", "husbandName")));
             var expiry = NormalizeExpiry(Get("enddate", "expiryDate", "validTo"));
+
 
             return new BackOcrResult(
                 proffession: proffession,
@@ -130,6 +131,22 @@ namespace Ocr.Core.Services
             // convert Arabic-Indic digits, then clean spaces/linebreaks
             return Clean(ConvertArabicDigits(s));
         }
+        private static string? StripLeadingNoise(string? s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return s;
+
+            // نظافة أولية
+            s = s.ReplaceLineEndings(" ").Trim();
+            while (s.Contains("  ")) s = s.Replace("  ", " ");
+
+            // شيل أي أرقام / علامات / مسافات في أول السطر
+            // مثال: "2 مهندس كهرباء"  →  "مهندس كهرباء"
+            //       "3  زهراء مدينة نصر" → "زهراء مدينة نصر"
+            s = Regex.Replace(s, @"^[\d\-\./\s]+", "");
+
+            return s.Trim();
+        }
+
 
         // Try to coerce something like "2026\n-88\n-83\n" into "2026-08-03"
         private static string? NormalizeExpiry(string? s)

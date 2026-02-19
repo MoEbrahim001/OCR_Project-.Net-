@@ -16,8 +16,12 @@ public class RecordService : IRecordService
     private readonly IUnitOfWork _uow;
     private readonly IOcrClient _ocrClient;   // you already have this
     private readonly IRecordRepository _repo;
-    public RecordService(IUnitOfWork uow, IOcrClient ocrClient, IRecordRepository repo) { _uow = uow; _ocrClient = ocrClient;
+    private readonly IOcrParser _parser;
+    public RecordService(IUnitOfWork uow, IOcrClient ocrClient, IRecordRepository repo, IOcrParser parser)
+    {
+        _uow = uow; _ocrClient = ocrClient;
         _repo = repo;
+        _parser = parser;
     }
     private static DateOnly? ParseYmd(string? s)
     {
@@ -68,39 +72,90 @@ public class RecordService : IRecordService
     }
 
 
+    //public async Task<Record> ImportAsync(
+    // IFormFile frontImage,
+    // IFormFile backImage,
+    // int threshold,
+    // CancellationToken ct = default,
+    // CreateUpdateRecordDto? overrideDto = null)
+    //{
+    //    // --- Call Python: FRONT ---
+    //    using var f = frontImage.OpenReadStream();
+    //    var frontExtraction = await _ocrClient.ExtractFrontAsync(
+    //        f, frontImage.FileName, frontImage.ContentType ?? "application/octet-stream", threshold, ct);
+    //    var front = JsonSerializer.Deserialize<FrontExtractDto>(frontExtraction.RawJson);
+
+    //    // --- Call Python: BACK ---
+    //    using var b = backImage.OpenReadStream();
+    //    var backExtraction = await _ocrClient.ExtractBackAsync(
+    //        b, backImage.FileName, backImage.ContentType ?? "application/octet-stream", threshold, ct);
+    //    var back = JsonSerializer.Deserialize<BackExtractDto>(backExtraction.RawJson);
+
+    //    // --- Map to entity ---
+    //    var rec = new Record
+    //    {
+    //        Name = front?.name,
+    //        IdNumber = front?.ID,
+    //        DateOfBirth = ParseYmd(front?.DOB),
+    //        Address = front?.address,
+    //        Gender = back?.Gender,
+    //        Profession = back?.Profession,
+    //        MaritalStatus = back?.MaritalStatus,
+    //        Religion = back?.Religion,
+    //        EndDate = ParseYmd(back?.EndDate),   // ? fixes EndDate=null
+    //        PhotoBase64 = front?.image,
+    //        FaceBase64 = front?.face,
+    //        Notes = null
+    //    };
+
+    //    await _repo.AddAsync(rec, ct);
+    //    await _repo.SaveChangesAsync(ct);
+    //    return rec;
+    //}
     public async Task<Record> ImportAsync(
-     IFormFile frontImage,
-     IFormFile backImage,
-     int threshold,
-     CancellationToken ct = default,
-     CreateUpdateRecordDto? overrideDto = null)
+    IFormFile frontImage,
+    IFormFile backImage,
+    int threshold,
+    CancellationToken ct = default,
+    CreateUpdateRecordDto? overrideDto = null)
     {
         // --- Call Python: FRONT ---
         using var f = frontImage.OpenReadStream();
         var frontExtraction = await _ocrClient.ExtractFrontAsync(
             f, frontImage.FileName, frontImage.ContentType ?? "application/octet-stream", threshold, ct);
-        var front = JsonSerializer.Deserialize<FrontExtractDto>(frontExtraction.RawJson);
+
+        // smart-correction
+        var frontSmart = _parser.ParseFront(frontExtraction);
+        // raw dto ???? ?????? ???? face
+        var frontRaw = JsonSerializer.Deserialize<FrontExtractDto>(frontExtraction.RawJson);
 
         // --- Call Python: BACK ---
         using var b = backImage.OpenReadStream();
         var backExtraction = await _ocrClient.ExtractBackAsync(
             b, backImage.FileName, backImage.ContentType ?? "application/octet-stream", threshold, ct);
-        var back = JsonSerializer.Deserialize<BackExtractDto>(backExtraction.RawJson);
+
+        // smart-correction ?????
+        var backSmart = _parser.ParseBack(backExtraction);
 
         // --- Map to entity ---
         var rec = new Record
         {
-            Name = front?.name,
-            IdNumber = front?.ID,
-            DateOfBirth = ParseYmd(front?.DOB),
-            Address = front?.address,
-            Gender = back?.Gender,
-            Profession = back?.Profession,
-            MaritalStatus = back?.MaritalStatus,
-            Religion = back?.Religion,
-            EndDate = ParseYmd(back?.EndDate),   // ? fixes EndDate=null
-            PhotoBase64 = front?.image,
-            FaceBase64 = front?.face,
+            // FRONT (???? ??? smart, ??? null ???? ???? ?? ??? raw)
+            Name = frontSmart.Name ?? frontRaw?.name,
+            IdNumber = frontSmart.NationalId ?? frontRaw?.ID,
+            DateOfBirth = ParseYmd(frontSmart.Dob ?? frontRaw?.DOB),
+            Address = frontSmart.Address ?? frontRaw?.address,
+
+            // BACK ?? ??? smart parser
+            Gender = backSmart.Gender,
+            Profession = backSmart.proffession,   // ??? ???? ?? ??? ??? ??
+            MaritalStatus = backSmart.MaritalStatus,
+            Religion = backSmart.Religion,
+            EndDate = ParseYmd(backSmart.ExpiryDate),
+
+            // ??? ?? ??? raw
+            PhotoBase64 = frontRaw?.image,
+            FaceBase64 = frontRaw?.face,
             Notes = null
         };
 
@@ -108,6 +163,7 @@ public class RecordService : IRecordService
         await _repo.SaveChangesAsync(ct);
         return rec;
     }
+
     private static RecordDto ToDto(Record r) => new(
         r.Id, r.Name, r.IdNumber, r.DateOfBirth, r.Address, r.Gender, r.Profession,
         r.MaritalStatus, r.Religion, r.EndDate, r.PhotoBase64, r.FaceBase64, r.Notes, r.CreatedAtUtc);
