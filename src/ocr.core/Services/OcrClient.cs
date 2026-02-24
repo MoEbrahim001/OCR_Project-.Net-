@@ -24,10 +24,11 @@ namespace Ocr.Core.Services
             Stream imageStream,
             string fileName,
             string? contentType,
-            int threshold,
+            int? threshold,
             CancellationToken ct)
         {
-            var path = (pathTemplate ?? string.Empty).Replace("{threshold}", threshold.ToString());
+            // threshold is ignored because Python endpoint doesn't use it
+            var path = (pathTemplate ?? string.Empty);
             if (!path.StartsWith("/")) path = "/" + path;
 
             using var content = new MultipartFormDataContent();
@@ -37,16 +38,19 @@ namespace Ocr.Core.Services
 
             using var resp = await _http.PostAsync(path, content, ct);
             var raw = await resp.Content.ReadAsStringAsync(ct);
-            resp.EnsureSuccessStatusCode();
+
+            if (!resp.IsSuccessStatusCode)
+                throw new InvalidOperationException($"Python OCR failed: {(int)resp.StatusCode} - {raw}");
+
             return new OcrExtraction(raw);
         }
 
         public Task<OcrExtraction> ExtractFrontAsync(
-            Stream imageStream, string fileName, string? contentType, int threshold, CancellationToken ct = default) =>
+            Stream imageStream, string fileName, string? contentType, int? threshold = null, CancellationToken ct = default) =>
             SendAsync(_config["Ocr:FrontPath"]!, imageStream, fileName, contentType, threshold, ct);
 
         public Task<OcrExtraction> ExtractBackAsync(
-            Stream imageStream, string fileName, string? contentType, int threshold, CancellationToken ct = default) =>
+            Stream imageStream, string fileName, string? contentType, int? threshold = null, CancellationToken ct = default) =>
             SendAsync(_config["Ocr:BackPath"]!, imageStream, fileName, contentType, threshold, ct);
     }
 }

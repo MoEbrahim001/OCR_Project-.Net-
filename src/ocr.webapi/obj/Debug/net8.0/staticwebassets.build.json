@@ -1,11 +1,1 @@
-{
-  "Version": 1,
-  "Hash": "hcAu4DpWUW2BsfCk1yhy7AWi9z/4Jg/a2uPWnDLBGoA=",
-  "Source": "ocr.webapi",
-  "BasePath": "_content/ocr.webapi",
-  "Mode": "Default",
-  "ManifestType": "Build",
-  "ReferencedProjectsConfiguration": [],
-  "DiscoveryPatterns": [],
-  "Assets": []
-}
+{"Version":1,"Hash":"D3Sns306M8PS8BWL/H65EIVSJ+CFadkMb9nUNo2jWm8=","Source":"ocr.webapi","BasePath":"_content/ocr.webapi","Mode":"Default","ManifestType":"Build","ReferencedProjectsConfiguration":[],"DiscoveryPatterns":[],"Assets":[],"Endpoints":[]}

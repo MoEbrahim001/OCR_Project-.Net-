@@ -100,7 +100,7 @@ app.MapGet("/", context =>
     context.Response.Redirect("/swagger");
     return Task.CompletedTask;
 });
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 if (app.Environment.IsDevelopment())
 {
@@ -112,6 +112,7 @@ else
     // Only Angular allowed in Prod
     app.UseCors(AllowAngular);
 }
+app.MapGet("/health", () => Results.Ok(new { ok = true }));
 
 app.MapControllers();
 
