@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ocr.model")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d87d1dd5cee8d9fa40f7f392bd27fe45e38a67bf")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2de148ca7a65757704d960f8bf07ae783a9eaeb1")]
 [assembly: System.Reflection.AssemblyProductAttribute("ocr.model")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ocr.model")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -95,10 +95,8 @@ C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.webapi\obj\Debug\net8.0\ocr.webapi
 C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.webapi\obj\Debug\net8.0\ref\ocr.webapi.dll
 C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.webapi\obj\Debug\net8.0\ocr.webapi.sourcelink.json
 C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.webapi\obj\Debug\net8.0\ocr.webapi.MvcApplicationPartsAssemblyInfo.cs
-C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.webapi\bin\Debug\net8.0\ocr.webapi.staticwebassets.endpoints.json
-C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.webapi\obj\Debug\net8.0\rpswa.dswa.cache.json
-C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.webapi\obj\Debug\net8.0\rjimswa.dswa.cache.json
-C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.webapi\obj\Debug\net8.0\rjsmrazor.dswa.cache.json
-C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.webapi\obj\Debug\net8.0\rjsmcshtml.dswa.cache.json
-C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.webapi\obj\Debug\net8.0\staticwebassets.build.json.cache
-C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.webapi\obj\Debug\net8.0\staticwebassets.build.endpoints.json
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.webapi\obj\Debug\net8.0\staticwebassets\msbuild.ocr.webapi.Microsoft.AspNetCore.StaticWebAssets.props
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.webapi\obj\Debug\net8.0\staticwebassets\msbuild.build.ocr.webapi.props
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.webapi\obj\Debug\net8.0\staticwebassets\msbuild.buildMultiTargeting.ocr.webapi.props
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.webapi\obj\Debug\net8.0\staticwebassets\msbuild.buildTransitive.ocr.webapi.props
+C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.webapi\obj\Debug\net8.0\staticwebassets.pack.json
