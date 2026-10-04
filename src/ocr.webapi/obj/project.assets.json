@@ -3437,6 +3437,20 @@
           "bin/placeholder/ocr.domain.dll": {}
         }
       },
+      "ocr.infrastructure/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "dependencies": {
+          "ocr.core": "1.0.0",
+          "ocr.viewmodel": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/ocr.infrastructure.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/ocr.infrastructure.dll": {}
+        }
+      },
       "ocr.model/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
@@ -9771,6 +9785,11 @@
       "path": "../ocr.domain/ocr.domain.csproj",
       "msbuildProject": "../ocr.domain/ocr.domain.csproj"
     },
+    "ocr.infrastructure/1.0.0": {
+      "type": "project",
+      "path": "../ocr.infrastructure/ocr.infrastructure.csproj",
+      "msbuildProject": "../ocr.infrastructure/ocr.infrastructure.csproj"
+    },
     "ocr.model/1.0.0": {
       "type": "project",
       "path": "../ocr.model/ocr.model.csproj",
@@ -9789,6 +9808,7 @@
       "Swashbuckle.AspNetCore >= 6.6.2",
       "ocr.core >= 1.0.0",
       "ocr.domain >= 1.0.0",
+      "ocr.infrastructure >= 1.0.0",
       "ocr.model >= 1.0.0",
       "ocr.viewmodel >= 1.0.0"
     ]
@@ -9826,6 +9846,9 @@
             },
             "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.domain\\ocr.domain.csproj": {
               "projectPath": "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.domain\\ocr.domain.csproj"
+            },
+            "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.infrastructure\\ocr.infrastructure.csproj": {
+              "projectPath": "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.infrastructure\\ocr.infrastructure.csproj"
             },
             "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.model\\ocr.model.csproj": {
               "projectPath": "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.model\\ocr.model.csproj"

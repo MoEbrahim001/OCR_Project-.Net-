@@ -13,6 +13,7 @@
           "Swashbuckle.AspNetCore": "6.6.2",
           "ocr.core": "1.0.0",
           "ocr.domain": "1.0.0",
+          "ocr.infrastructure": "1.0.0",
           "ocr.model": "1.0.0",
           "ocr.viewmodel": "1.0.0"
         },
@@ -1769,6 +1770,18 @@
           }
         }
       },
+      "ocr.infrastructure/1.0.0": {
+        "dependencies": {
+          "ocr.core": "1.0.0",
+          "ocr.viewmodel": "1.0.0"
+        },
+        "runtime": {
+          "ocr.infrastructure.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
       "ocr.model/1.0.0": {
         "dependencies": {
           "Microsoft.AspNetCore.Http": "2.3.0",
@@ -3160,6 +3173,11 @@
       "sha512": ""
     },
     "ocr.domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "ocr.infrastructure/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

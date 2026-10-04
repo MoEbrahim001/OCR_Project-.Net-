@@ -9,6 +9,7 @@
     <ProjectReference Include="..\ocr.domain\ocr.domain.csproj" />
     <ProjectReference Include="..\ocr.core\ocr.core.csproj" />
     <ProjectReference Include="..\ocr.model\ocr.model.csproj" />
+    <ProjectReference Include="..\ocr.infrastructure\ocr.infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.0" />

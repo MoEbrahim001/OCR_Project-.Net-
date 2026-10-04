@@ -5,13 +5,14 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Unicode;
 
-using Ocr.Core.Services;
 using Ocr.Core.UnitOfWork;
 using Ocr.Domain.Services;
 using Ocr.Domain.UnitOfWork;
 using Ocr.Model;
 using Ocr.Core.Repositories;
 using Ocr.Domain.Repositories;
+using Ocr.Infrastructure.OCR;
+using Ocr.Core.Services;
 using ocr.core.Services;
 
 var builder = WebApplication.CreateBuilder(args);

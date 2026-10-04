@@ -3,7 +3,8 @@ using Microsoft.Extensions.Configuration;
 using Ocr.Domain.Dtos;
 using Ocr.Domain.Services;
 
-namespace Ocr.Core.Services
+namespace Ocr.Infrastructure.OCR
+
 {
     public class OcrClient : IOcrClient
     {
