@@ -8,6 +8,6 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = ocr.core
-build_property.ProjectDir = C:\Users\dell\Desktop\ocr-suite-fixed\src\ocr.core\
+build_property.ProjectDir = C:\Users\dell\Desktop\OCR_Project-.Net-\src\ocr.core\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 

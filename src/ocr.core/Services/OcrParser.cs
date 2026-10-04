@@ -60,7 +60,9 @@ namespace Ocr.Core.Services
             }
 
             // Map Python keys (snake_case) → our DTO (camelCase)
-            var proffession = StripLeadingNoise(Clean(Get("profession", "proffession")));
+            var profession = StripLeadingNoise(
+                Clean(Get("occupation", "profession", "proffession"))
+            );
             var gender = StripLeadingNoise(Clean(Get("gender")));
             var religion = StripLeadingNoise(Clean(Get("religion")));
             var marital = StripLeadingNoise(Clean(Get("marital_status", "maritalStatus")));
@@ -69,7 +71,7 @@ namespace Ocr.Core.Services
 
 
             return new BackOcrResult(
-                proffession: proffession,
+                proffession: profession,
                 Gender: gender,
                 Religion: religion,
                 MaritalStatus: marital,

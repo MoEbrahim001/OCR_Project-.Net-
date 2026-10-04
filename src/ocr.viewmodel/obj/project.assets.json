@@ -7657,11 +7657,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\dell\\Desktop\\ocr-suite-fixed\\src\\ocr.viewmodel\\ocr.viewmodel.csproj",
+      "projectUniqueName": "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.viewmodel\\ocr.viewmodel.csproj",
       "projectName": "ocr.viewmodel",
-      "projectPath": "C:\\Users\\dell\\Desktop\\ocr-suite-fixed\\src\\ocr.viewmodel\\ocr.viewmodel.csproj",
+      "projectPath": "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.viewmodel\\ocr.viewmodel.csproj",
       "packagesPath": "C:\\Users\\dell\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\dell\\Desktop\\ocr-suite-fixed\\src\\ocr.viewmodel\\obj\\",
+      "outputPath": "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.viewmodel\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\dell\\AppData\\Roaming\\NuGet\\NuGet.Config",

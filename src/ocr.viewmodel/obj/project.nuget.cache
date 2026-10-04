@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "2qIZ7o4ohOg=",
+  "dgSpecHash": "qau+epNAPZM=",
   "success": true,
-  "projectFilePath": "C:\\Users\\dell\\Desktop\\ocr-suite-fixed\\src\\ocr.viewmodel\\ocr.viewmodel.csproj",
+  "projectFilePath": "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.viewmodel\\ocr.viewmodel.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\dell\\.nuget\\packages\\microsoft.aspnetcore.antiforgery\\2.3.0\\microsoft.aspnetcore.antiforgery.2.3.0.nupkg.sha512",
     "C:\\Users\\dell\\.nuget\\packages\\microsoft.aspnetcore.authentication.abstractions\\2.3.0\\microsoft.aspnetcore.authentication.abstractions.2.3.0.nupkg.sha512",

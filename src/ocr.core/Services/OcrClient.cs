@@ -27,14 +27,13 @@ namespace Ocr.Core.Services
             int threshold,
             CancellationToken ct)
         {
-            var path = (pathTemplate ?? string.Empty).Replace("{threshold}", threshold.ToString());
+            var path = (pathTemplate ?? string.Empty);
             if (!path.StartsWith("/")) path = "/" + path;
 
             using var content = new MultipartFormDataContent();
             var fileContent = new StreamContent(imageStream);
             fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType ?? "application/octet-stream");
-            content.Add(fileContent, "image", fileName);
-
+content.Add(fileContent, "file", fileName);
             using var resp = await _http.PostAsync(path, content, ct);
             var raw = await resp.Content.ReadAsStringAsync(ct);
             resp.EnsureSuccessStatusCode();
