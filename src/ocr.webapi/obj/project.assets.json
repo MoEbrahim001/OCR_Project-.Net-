@@ -3441,7 +3441,11 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
+          "Microsoft.EntityFrameworkCore": "8.0.6",
+          "Microsoft.EntityFrameworkCore.SqlServer": "8.0.6",
           "ocr.core": "1.0.0",
+          "ocr.domain": "1.0.0",
+          "ocr.model": "1.0.0",
           "ocr.viewmodel": "1.0.0"
         },
         "compile": {

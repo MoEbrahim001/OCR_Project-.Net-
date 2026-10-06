@@ -5,5 +5,7 @@ namespace Ocr.Domain.UnitOfWork;
 public interface IUnitOfWork : IAsyncDisposable
 {
     IRecordRepository Records { get; }
-    Task<int> SaveChangesAsync(System.Threading.CancellationToken ct = default);
+
+    Task<int> SaveChangesAsync(
+        CancellationToken ct = default);
 }

@@ -1,8 +1,9 @@
 ﻿using System.Text;
 using System.Text.Json;
-using Ocr.Domain.Dtos;
 using Ocr.Domain.Services;
 using System.Text.RegularExpressions;
+using Ocr.Core.OCR.DTOs;
+using Ocr.Core.Abstractions;
 
 namespace Ocr.Core.Services
 {

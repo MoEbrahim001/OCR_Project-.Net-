@@ -195,6 +195,12 @@
               "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.core\\ocr.core.csproj": {
                 "projectPath": "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.core\\ocr.core.csproj"
               },
+              "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.domain\\ocr.domain.csproj": {
+                "projectPath": "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.domain\\ocr.domain.csproj"
+              },
+              "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.model\\ocr.model.csproj": {
+                "projectPath": "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.model\\ocr.model.csproj"
+              },
               "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.viewmodel\\ocr.viewmodel.csproj": {
                 "projectPath": "C:\\Users\\dell\\Desktop\\OCR_Project-.Net-\\src\\ocr.viewmodel\\ocr.viewmodel.csproj"
               }
@@ -215,6 +221,16 @@
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.EntityFrameworkCore": {
+              "target": "Package",
+              "version": "[8.0.6, )"
+            },
+            "Microsoft.EntityFrameworkCore.SqlServer": {
+              "target": "Package",
+              "version": "[8.0.6, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",

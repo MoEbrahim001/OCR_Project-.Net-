@@ -1,14 +1,30 @@
 using Ocr.Model.Entities;
-using System.Linq.Expressions;
 
 namespace Ocr.Domain.Repositories;
 
 public interface IRecordRepository
 {
-    Task<Record?> GetByIdAsync(int id);
-    Task AddAsync(Record record, CancellationToken ct = default);
-    Task SaveChangesAsync(CancellationToken ct = default);
-    Task UpdateAsync(Record entity);
-    Task DeleteAsync(Record entity);
-    IQueryable<Record> Query(Expression<Func<Record, bool>>? filter = null);
+    Task<Record?> GetByIdAsync(
+        int id,
+        CancellationToken ct = default);
+
+    Task AddAsync(
+        Record record,
+        CancellationToken ct = default);
+
+    void Update(Record record);
+
+    void Delete(Record record);
+
+    Task<(IReadOnlyList<Record> Items, int TotalCount)> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
+        CancellationToken ct = default);
+
+    Task<(IReadOnlyList<Record> Items, int TotalCount)> SearchAsync(
+        string? name,
+        string? idNumber,
+        int pageNumber,
+        int pageSize,
+        CancellationToken ct = default);
 }

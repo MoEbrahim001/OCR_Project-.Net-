@@ -1,318 +1,551 @@
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
+
+using Ocr.Core.Abstractions;
 using Ocr.Domain.Services;
+using Ocr.Domain.UnitOfWork;
 using Ocr.Model.Entities;
 using Ocr.ViewModel;
-using Ocr.Domain.UnitOfWork;
-using Ocr.Domain.Repositories;
-using Microsoft.AspNetCore.Http;
+
 using ocr.viewmodel;
-using System.Text.Json;
+
 using System.Text;
+using System.Text.Json;
 
 namespace Ocr.Core.Services;
 
 public class RecordService : IRecordService
 {
     private readonly IUnitOfWork _uow;
-    private readonly IOcrClient _ocrClient;   // you already have this
-    private readonly IRecordRepository _repo;
+    private readonly IOcrClient _ocrClient;
     private readonly IOcrParser _parser;
-    public RecordService(IUnitOfWork uow, IOcrClient ocrClient, IRecordRepository repo, IOcrParser parser)
+
+    public RecordService(
+        IUnitOfWork uow,
+        IOcrClient ocrClient,
+        IOcrParser parser)
     {
-        _uow = uow; _ocrClient = ocrClient;
-        _repo = repo;
+        _uow = uow;
+        _ocrClient = ocrClient;
         _parser = parser;
     }
+
+
+    // =====================================================
+    // Helpers
+    // =====================================================
+
     private static DateOnly? ParseYmd(string? s)
     {
         if (string.IsNullOrWhiteSpace(s))
+        {
             return null;
+        }
 
-        // Remove spaces, newlines, and carriage returns
         s = s.Trim()
-             .Replace("\r", "")
-             .Replace("\n", "")
-             .Replace(" ", "")
-             .Replace("--", "-");
+            .Replace("\r", "")
+            .Replace("\n", "")
+            .Replace(" ", "")
+            .Replace("--", "-");
 
-        // Extract only digits and dashes
-        var digits = new string(s.Where(c => char.IsDigit(c) || c == '-').ToArray());
+        var digits = new string(
+            s.Where(c => char.IsDigit(c) || c == '-')
+             .ToArray());
 
-        // If the OCR returned something like 2026-88-83, try to normalize it
-        var parts = digits.Split('-', StringSplitOptions.RemoveEmptyEntries);
+        var parts = digits.Split(
+            '-',
+            StringSplitOptions.RemoveEmptyEntries);
 
         try
         {
             if (parts.Length == 3)
             {
-                // Force valid ranges for month/day
-                int year = int.Parse(parts[0]);
-                int month = Math.Clamp(int.Parse(parts[1]), 1, 12);
-                int day = Math.Clamp(int.Parse(parts[2]), 1, 28); // Avoid invalid 31/30 issues
+                var year = int.Parse(parts[0]);
 
-                return new DateOnly(year, month, day);
+                var month = Math.Clamp(
+                    int.Parse(parts[1]),
+                    1,
+                    12);
+
+                var day = Math.Clamp(
+                    int.Parse(parts[2]),
+                    1,
+                    28);
+
+                return new DateOnly(
+                    year,
+                    month,
+                    day);
             }
 
-            // Handle case like "20260823"
-            if (digits.Length == 8 && !digits.Contains('-'))
+            if (digits.Length == 8 &&
+                !digits.Contains('-'))
             {
-                int year = int.Parse(digits.Substring(0, 4));
-                int month = int.Parse(digits.Substring(4, 2));
-                int day = int.Parse(digits.Substring(6, 2));
-                return new DateOnly(year, month, day);
+                var year = int.Parse(
+                    digits.Substring(0, 4));
+
+                var month = int.Parse(
+                    digits.Substring(4, 2));
+
+                var day = int.Parse(
+                    digits.Substring(6, 2));
+
+                return new DateOnly(
+                    year,
+                    month,
+                    day);
             }
         }
         catch
         {
-            // Fall back to today + 3 years if OCR gives nonsense
-            return new DateOnly(DateTime.UtcNow.Year + 3, 1, 1);
+            return new DateOnly(
+                DateTime.UtcNow.Year + 3,
+                1,
+                1);
         }
 
         return null;
     }
 
 
-    //public async Task<Record> ImportAsync(
-    // IFormFile frontImage,
-    // IFormFile backImage,
-    // int threshold,
-    // CancellationToken ct = default,
-    // CreateUpdateRecordDto? overrideDto = null)
-    //{
-    //    // --- Call Python: FRONT ---
-    //    using var f = frontImage.OpenReadStream();
-    //    var frontExtraction = await _ocrClient.ExtractFrontAsync(
-    //        f, frontImage.FileName, frontImage.ContentType ?? "application/octet-stream", threshold, ct);
-    //    var front = JsonSerializer.Deserialize<FrontExtractDto>(frontExtraction.RawJson);
-
-    //    // --- Call Python: BACK ---
-    //    using var b = backImage.OpenReadStream();
-    //    var backExtraction = await _ocrClient.ExtractBackAsync(
-    //        b, backImage.FileName, backImage.ContentType ?? "application/octet-stream", threshold, ct);
-    //    var back = JsonSerializer.Deserialize<BackExtractDto>(backExtraction.RawJson);
-
-    //    // --- Map to entity ---
-    //    var rec = new Record
-    //    {
-    //        Name = front?.name,
-    //        IdNumber = front?.ID,
-    //        DateOfBirth = ParseYmd(front?.DOB),
-    //        Address = front?.address,
-    //        Gender = back?.Gender,
-    //        Profession = back?.Profession,
-    //        MaritalStatus = back?.MaritalStatus,
-    //        Religion = back?.Religion,
-    //        EndDate = ParseYmd(back?.EndDate),   // ? fixes EndDate=null
-    //        PhotoBase64 = front?.image,
-    //        FaceBase64 = front?.face,
-    //        Notes = null
-    //    };
-
-    //    await _repo.AddAsync(rec, ct);
-    //    await _repo.SaveChangesAsync(ct);
-    //    return rec;
-    //}
-    public async Task<Record> ImportAsync(
-    IFormFile frontImage,
-    IFormFile backImage,
-    int threshold,
-    CancellationToken ct = default,
-    CreateUpdateRecordDto? overrideDto = null)
+    private static RecordDto ToDto(Record record)
     {
-        // --- Call Python: FRONT ---
-        using var f = frontImage.OpenReadStream();
-        var frontExtraction = await _ocrClient.ExtractFrontAsync(
-            f, frontImage.FileName, frontImage.ContentType ?? "application/octet-stream", threshold, ct);
-
-        // smart-correction
-        var frontSmart = _parser.ParseFront(frontExtraction);
-        // raw dto ???? ?????? ???? face
-        var frontRaw = JsonSerializer.Deserialize<FrontExtractDto>(frontExtraction.RawJson);
-
-        // --- Call Python: BACK ---
-        using var b = backImage.OpenReadStream();
-        var backExtraction = await _ocrClient.ExtractBackAsync(
-            b, backImage.FileName, backImage.ContentType ?? "application/octet-stream", threshold, ct);
-
-        // smart-correction ?????
-        var backSmart = _parser.ParseBack(backExtraction);
-
-        // --- Map to entity ---
-        var rec = new Record
-        {
-            // FRONT (???? ??? smart, ??? null ???? ???? ?? ??? raw)
-            Name = frontSmart.Name ?? frontRaw?.name,
-            IdNumber = frontSmart.NationalId ?? frontRaw?.ID,
-            DateOfBirth = ParseYmd(frontSmart.Dob ?? frontRaw?.DOB),
-            Address = frontSmart.Address ?? frontRaw?.address,
-
-            // BACK ?? ??? smart parser
-            Gender = backSmart.Gender,
-            Profession = backSmart.proffession,   // ??? ???? ?? ??? ??? ??
-            MaritalStatus = backSmart.MaritalStatus,
-            Religion = backSmart.Religion,
-            EndDate = ParseYmd(backSmart.ExpiryDate),
-
-            // ??? ?? ??? raw
-            PhotoBase64 = frontRaw?.image,
-            FaceBase64 = frontRaw?.face,
-            Notes = null
-        };
-
-        await _repo.AddAsync(rec, ct);
-        await _repo.SaveChangesAsync(ct);
-        return rec;
+        return new RecordDto(
+            record.Id,
+            record.Name,
+            record.IdNumber,
+            record.DateOfBirth,
+            record.Address,
+            record.Gender,
+            record.Profession,
+            record.MaritalStatus,
+            record.Religion,
+            record.EndDate,
+            record.PhotoBase64,
+            record.FaceBase64,
+            record.Notes,
+            record.CreatedAtUtc,
+            record.FrontImageDataUrl,
+            record.BackImageDataUrl
+        );
     }
 
-    private static RecordDto ToDto(Record r) => new(
-        r.Id, r.Name, r.IdNumber, r.DateOfBirth, r.Address, r.Gender, r.Profession,
-        r.MaritalStatus, r.Religion, r.EndDate, r.PhotoBase64, r.FaceBase64, r.Notes, r.CreatedAtUtc);
+    private static string? NormalizeDigits(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return value;
+        }
+
+        var sb = new StringBuilder(value.Length);
+
+        foreach (var ch in value)
+        {
+            // Arabic-Indic digits
+            if (ch >= '\u0660' &&
+                ch <= '\u0669')
+            {
+                sb.Append(
+                    (char)('0' + (ch - '\u0660')));
+            }
+
+            // Extended Arabic-Indic digits
+            else if (
+                ch >= '\u06F0' &&
+                ch <= '\u06F9')
+            {
+                sb.Append(
+                    (char)('0' + (ch - '\u06F0')));
+            }
+            else
+            {
+                sb.Append(ch);
+            }
+        }
+
+        return sb
+            .ToString()
+            .Replace(" ", "");
+    }
+
+
+    // =====================================================
+    // OCR Import
+    // =====================================================
+
+    public async Task<Record> ImportAsync(
+        IFormFile frontImage,
+        IFormFile backImage,
+        int threshold,
+        CancellationToken ct = default,
+        CreateUpdateRecordDto? overrideDto = null)
+    {
+        // -------------------------
+        // Front OCR
+        // -------------------------
+
+        using var frontStream =
+            frontImage.OpenReadStream();
+
+        var frontExtraction =
+            await _ocrClient.ExtractFrontAsync(
+                frontStream,
+                frontImage.FileName,
+                frontImage.ContentType
+                    ?? "application/octet-stream",
+                threshold,
+                ct);
+
+        var frontSmart =
+            _parser.ParseFront(frontExtraction);
+
+        var frontRaw =
+            JsonSerializer.Deserialize<FrontExtractDto>(
+                frontExtraction.RawJson);
+
+
+        // -------------------------
+        // Back OCR
+        // -------------------------
+
+        using var backStream =
+            backImage.OpenReadStream();
+
+        var backExtraction =
+            await _ocrClient.ExtractBackAsync(
+                backStream,
+                backImage.FileName,
+                backImage.ContentType
+                    ?? "application/octet-stream",
+                threshold,
+                ct);
+
+        var backSmart =
+            _parser.ParseBack(backExtraction);
+
+
+        // -------------------------
+        // Map OCR -> Entity
+        // -------------------------
+        var frontImageDataUrl =
+    await ToDataUrlAsync(
+        frontImage,
+        ct
+    );
+
+        var backImageDataUrl =
+            await ToDataUrlAsync(
+                backImage,
+                ct
+            );
+        var record = new Record
+        {
+            Name =
+           frontSmart.Name
+           ?? frontRaw?.name,
+
+            IdNumber =
+           frontSmart.NationalId
+           ?? frontRaw?.ID,
+
+            DateOfBirth =
+           ParseYmd(
+               frontSmart.Dob
+               ?? frontRaw?.DOB
+           ),
+
+            Address =
+           frontSmart.Address
+           ?? frontRaw?.address,
+
+            Gender =
+           backSmart.Gender,
+
+            Profession =
+           backSmart.proffession,
+
+            MaritalStatus =
+           backSmart.MaritalStatus,
+
+            Religion =
+           backSmart.Religion,
+
+            EndDate =
+           ParseYmd(
+               backSmart.ExpiryDate
+           ),
+
+            PhotoBase64 =
+           frontRaw?.image,
+
+            FaceBase64 =
+           frontRaw?.face,
+
+            Notes =
+           null,
+
+            FrontImageDataUrl =
+           frontImageDataUrl,
+
+            BackImageDataUrl =
+           backImageDataUrl
+        };
+
+
+        await _uow.Records.AddAsync(
+            record,
+            ct);
+
+        await _uow.SaveChangesAsync(ct);
+
+        return record;
+    }
+
+
+    // =====================================================
+    // Get By Id
+    // =====================================================
 
     public async Task<RecordDto?> GetAsync(int id)
     {
-        var r = await _uow.Records.GetByIdAsync(id);
-        return r is null ? null : ToDto(r);
+        var record =
+            await _uow.Records.GetByIdAsync(id);
+
+        return record is null
+            ? null
+            : ToDto(record);
     }
 
-    public async Task<PagedResult<RecordDto>> GetPagedAsync(int pageNumber, int pageSize)
+
+    // =====================================================
+    // Pagination
+    // =====================================================
+
+    public async Task<PagedResult<RecordDto>> GetPagedAsync(
+        int pageNumber,
+        int pageSize)
     {
-        if (pageNumber <= 0) pageNumber = 1;
-        if (pageSize <= 0 || pageSize > 100) pageSize = 10;
+        if (pageNumber <= 0)
+        {
+            pageNumber = 1;
+        }
 
-        var q = _uow.Records.Query().AsNoTracking();
+        if (pageSize <= 0 ||
+            pageSize > 100)
+        {
+            pageSize = 10;
+        }
 
-        // Earliest first (smallest Id first)
-        q = q.OrderBy(r => r.Id);
-        // If you want latest first instead, use:
-        // q = q.OrderByDescending(r => r.Id);
-
-        var total = await q.CountAsync();
-
-        var items = await q
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .Select(r => ToDto(r)) // or map after ToList if you prefer
-            .ToListAsync();
+        var result =
+            await _uow.Records.GetPagedAsync(
+                pageNumber,
+                pageSize);
 
         return new PagedResult<RecordDto>
         {
-            Items = items,
+            Items = result.Items
+                .Select(ToDto)
+                .ToList(),
+
             PageNumber = pageNumber,
             PageSize = pageSize,
-            TotalCount = total
+            TotalCount = result.TotalCount
         };
     }
 
 
-    public async Task<RecordDto> CreateAsync(CreateUpdateRecordDto dto)
+    // =====================================================
+    // Create
+    // =====================================================
+
+    public async Task<RecordDto> CreateAsync(
+     CreateUpdateRecordDto dto)
     {
-        var r = new Record
+        Console.WriteLine(
+            $"FRONT RECEIVED: {dto.FrontImageDataUrl?.Length ?? 0}"
+        );
+
+        Console.WriteLine(
+            $"BACK RECEIVED: {dto.BackImageDataUrl?.Length ?? 0}"
+        );
+
+        var record = new Record
         {
-            Name = dto.Name, IdNumber = dto.IdNumber, DateOfBirth = dto.DateOfBirth,
-            Address = dto.Address, Gender = dto.Gender,
+            Name = dto.Name,
+            IdNumber = dto.IdNumber,
+            DateOfBirth = dto.DateOfBirth,
+            Address = dto.Address,
+            Gender = dto.Gender,
             Profession = dto.Profession,
-            MaritalStatus = dto.MaritalStatus, Religion = dto.Religion,
-            EndDate = dto.EndDate, PhotoBase64 = dto.PhotoBase64, FaceBase64 = dto.FaceBase64, Notes = dto.Notes
+            MaritalStatus = dto.MaritalStatus,
+            Religion = dto.Religion,
+            EndDate = dto.EndDate,
+
+            PhotoBase64 = dto.PhotoBase64,
+            FaceBase64 = dto.FaceBase64,
+
+            Notes = dto.Notes,
+
+            FrontImageDataUrl =
+                dto.FrontImageDataUrl,
+
+            BackImageDataUrl =
+                dto.BackImageDataUrl
         };
-        await _uow.Records.AddAsync(r);
-        await _uow.SaveChangesAsync();
-        return ToDto(r);
-    }
 
-    public async Task<RecordDto?> UpdateAsync(int id, CreateUpdateRecordDto dto)
+
+        Console.WriteLine(
+            $"ENTITY FRONT: {record.FrontImageDataUrl?.Length ?? 0}"
+        );
+
+        Console.WriteLine(
+            $"ENTITY BACK: {record.BackImageDataUrl?.Length ?? 0}"
+        );
+
+
+        await _uow.Records.AddAsync(
+            record
+        );
+
+        await _uow.SaveChangesAsync();
+
+
+        return ToDto(record);
+    }
+    private static async Task<string> ToDataUrlAsync(
+    IFormFile file,
+    CancellationToken ct)
     {
-        var r = await _uow.Records.GetByIdAsync(id);
-        if (r is null) return null;
-        r.Name = dto.Name;
-        r.IdNumber = dto.IdNumber;
-        r.DateOfBirth = dto.DateOfBirth;
-        r.Address = dto.Address;
-        r.Gender = dto.Gender;
-        r.Profession = dto.Profession;
-        r.MaritalStatus = dto.MaritalStatus;
-        r.Religion = dto.Religion;
-        r.EndDate = dto.EndDate;
-        r.PhotoBase64 = dto.PhotoBase64;
-        r.FaceBase64 = dto.FaceBase64;
-        r.Notes = dto.Notes;
+        using var ms =
+            new MemoryStream();
 
-        await _uow.Records.UpdateAsync(r);
-        await _uow.SaveChangesAsync();
-        return ToDto(r);
+        await file.CopyToAsync(
+            ms,
+            ct
+        );
+
+        var base64 =
+            Convert.ToBase64String(
+                ms.ToArray()
+            );
+
+        var contentType =
+            string.IsNullOrWhiteSpace(file.ContentType)
+                ? "image/jpeg"
+                : file.ContentType;
+
+        return
+            $"data:{contentType};base64,{base64}";
     }
+
+    // =====================================================
+    // Update
+    // =====================================================
+
+    public async Task<RecordDto?> UpdateAsync(
+        int id,
+        CreateUpdateRecordDto dto)
+    {
+        var record =
+            await _uow.Records.GetByIdAsync(id);
+
+        if (record is null)
+        {
+            return null;
+        }
+
+        record.Name = dto.Name;
+        record.IdNumber = dto.IdNumber;
+        record.DateOfBirth = dto.DateOfBirth;
+        record.Address = dto.Address;
+        record.Gender = dto.Gender;
+        record.Profession = dto.Profession;
+        record.MaritalStatus = dto.MaritalStatus;
+        record.Religion = dto.Religion;
+        record.EndDate = dto.EndDate;
+        record.PhotoBase64 = dto.PhotoBase64;
+        record.FaceBase64 = dto.FaceBase64;
+        record.Notes = dto.Notes;
+        record.FrontImageDataUrl = dto.FrontImageDataUrl;
+        record.BackImageDataUrl = dto.BackImageDataUrl;
+
+        _uow.Records.Update(record);
+
+        await _uow.SaveChangesAsync();
+
+        return ToDto(record);
+    }
+
+
+    // =====================================================
+    // Delete
+    // =====================================================
 
     public async Task<bool> DeleteAsync(int id)
     {
-        var r = await _uow.Records.GetByIdAsync(id);
-        if (r is null) return false;
-        await _uow.Records.DeleteAsync(r);
-        await _uow.SaveChangesAsync();
-        return true;
-    }
-    public async Task<PagedResult<RecordDto>> SearchAsync(
-        string? name, string? idNumber, int pageNumber, int pageSize)
-    {
-        if (pageNumber <= 0) pageNumber = 1;
-        if (pageSize <= 0 || pageSize > 100) pageSize = 10;
+        var record =
+            await _uow.Records.GetByIdAsync(id);
 
-        var q = _uow.Records.Query().AsNoTracking(); // IQueryable<Record> from repo :contentReference[oaicite:2]{index=2}
-
-        var nameTerm = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
-        var idTermRaw = string.IsNullOrWhiteSpace(idNumber) ? null : idNumber.Trim();
-        var idTerm = NormalizeDigits(idTermRaw); // convert Arabic digits to 0-9
-
-        if (nameTerm is not null)
-            q = q.Where(r => r.Name != null && EF.Functions.Like(r.Name, $"%{nameTerm}%"));
-
-        if (!string.IsNullOrEmpty(idTerm))
+        if (record is null)
         {
-            // Match either raw or space-stripped DB value
-            q = q.Where(r =>
-                r.IdNumber != null &&
-                (
-                  r.IdNumber.Contains(idTerm) ||
-                  EF.Functions.Like(r.IdNumber, $"%{idTerm}%") ||
-                  // translate to SQL: REPLACE(IdNumber, ' ', '')
-                  r.IdNumber.Replace(" ", "").Contains(idTerm)
-                )
-            );
+            return false;
         }
 
-        var total = await q.CountAsync();
+        _uow.Records.Delete(record);
 
-        var items = await q
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .Select(r => ToDto(r)) // your existing mapper to RecordDto :contentReference[oaicite:3]{index=3}
-            .ToListAsync();
+        await _uow.SaveChangesAsync();
+
+        return true;
+    }
+
+
+    // =====================================================
+    // Search
+    // =====================================================
+
+    public async Task<PagedResult<RecordDto>> SearchAsync(
+        string? name,
+        string? idNumber,
+        int pageNumber,
+        int pageSize)
+    {
+        if (pageNumber <= 0)
+        {
+            pageNumber = 1;
+        }
+
+        if (pageSize <= 0 ||
+            pageSize > 100)
+        {
+            pageSize = 10;
+        }
+
+        var nameTerm =
+            string.IsNullOrWhiteSpace(name)
+                ? null
+                : name.Trim();
+
+        var idTerm =
+            NormalizeDigits(
+                string.IsNullOrWhiteSpace(idNumber)
+                    ? null
+                    : idNumber.Trim());
+
+        var result =
+            await _uow.Records.SearchAsync(
+                nameTerm,
+                idTerm,
+                pageNumber,
+                pageSize);
 
         return new PagedResult<RecordDto>
         {
-            Items = items,
+            Items = result.Items
+                .Select(ToDto)
+                .ToList(),
+
             PageNumber = pageNumber,
             PageSize = pageSize,
-            TotalCount = total
+            TotalCount = result.TotalCount
         };
     }
-
-    // Runs on server side (outside the LINQ expression)
-    private static string? NormalizeDigits(string? s)
-    {
-        if (string.IsNullOrEmpty(s)) return s;
-        var sb = new StringBuilder(s.Length);
-        foreach (var ch in s)
-        {
-            // Arabic-Indic ?????????? (U+0660..U+0669)
-            if (ch >= '\u0660' && ch <= '\u0669')
-                sb.Append((char)('0' + (ch - '\u0660')));
-            // Extended Arabic-Indic ?????????? (U+06F0..U+06F9)
-            else if (ch >= '\u06F0' && ch <= '\u06F9')
-                sb.Append((char)('0' + (ch - '\u06F0')));
-            else
-                sb.Append(ch);
-        }
-        // strip inner spaces just in the query side
-        return sb.ToString().Replace(" ", "");
-    }
-
 }

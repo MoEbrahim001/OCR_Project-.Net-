@@ -1,86 +1,6 @@
 [
   {
     "ContainingType": "Ocr.WebApi.Controllers.OcrController",
-    "Method": "Get",
-    "RelativePath": "api/Ocr",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "pageNumber",
-        "Type": "System.Int32",
-        "IsRequired": false
-      },
-      {
-        "Name": "pageSize",
-        "Type": "System.Int32",
-        "IsRequired": false
-      },
-      {
-        "Name": "name",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "idNumber",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "dateOfBirth",
-        "Type": "System.Nullable\u00601[[System.DateOnly, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
-        "IsRequired": false
-      },
-      {
-        "Name": "address",
-        "Type": "System.String",
-        "IsRequired": false
-      }
-    ],
-    "ReturnTypes": [
-      {
-        "Type": "Ocr.ViewModel.PagedResult\u00601[[Ocr.ViewModel.RecordDto, ocr.viewmodel, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
-        "MediaTypes": [
-          "application/json"
-        ],
-        "StatusCode": 200
-      }
-    ]
-  },
-  {
-    "ContainingType": "Ocr.WebApi.Controllers.OcrController",
-    "Method": "GetOne",
-    "RelativePath": "api/Ocr/{id}",
-    "HttpMethod": "GET",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "id",
-        "Type": "System.Int32",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": [
-      {
-        "Type": "Ocr.ViewModel.RecordDto",
-        "MediaTypes": [
-          "application/json"
-        ],
-        "StatusCode": 200
-      },
-      {
-        "Type": "Microsoft.AspNetCore.Mvc.ProblemDetails",
-        "MediaTypes": [
-          "application/json"
-        ],
-        "StatusCode": 404
-      }
-    ]
-  },
-  {
-    "ContainingType": "Ocr.WebApi.Controllers.OcrController",
     "Method": "ExtractBack",
     "RelativePath": "api/Ocr/extract/back",
     "HttpMethod": "POST",
@@ -100,11 +20,18 @@
     ],
     "ReturnTypes": [
       {
-        "Type": "Ocr.Domain.Dtos.BackOcrResult",
+        "Type": "Ocr.Core.OCR.DTOs.BackOcrResult",
         "MediaTypes": [
           "application/json"
         ],
         "StatusCode": 200
+      },
+      {
+        "Type": "Microsoft.AspNetCore.Mvc.ProblemDetails",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 400
       }
     ]
   },
@@ -129,11 +56,18 @@
     ],
     "ReturnTypes": [
       {
-        "Type": "Ocr.Domain.Dtos.FrontOcrResult",
+        "Type": "Ocr.Core.OCR.DTOs.FrontOcrResult",
         "MediaTypes": [
           "application/json"
         ],
         "StatusCode": 200
+      },
+      {
+        "Type": "Microsoft.AspNetCore.Mvc.ProblemDetails",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 400
       }
     ]
   },
@@ -168,6 +102,13 @@
           "application/json"
         ],
         "StatusCode": 201
+      },
+      {
+        "Type": "Microsoft.AspNetCore.Mvc.ProblemDetails",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 400
       }
     ]
   },

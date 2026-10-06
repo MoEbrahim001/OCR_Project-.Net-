@@ -14,4 +14,7 @@ public record RecordDto(
     string? PhotoBase64,
     string? FaceBase64,
     string? Notes,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    string? FrontImageDataUrl,
+    string? BackImageDataUrl
+);

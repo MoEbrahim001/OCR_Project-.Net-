@@ -1,4 +1,4 @@
-﻿namespace Ocr.Domain.Dtos
+﻿namespace Ocr.Core.OCR.DTOs
 {
     public record FrontOcrResult(
         string? Name,

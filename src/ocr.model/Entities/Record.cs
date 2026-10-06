@@ -34,4 +34,7 @@ public class Record
     public string? Notes { get; set; }
 
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public string? FrontImageDataUrl { get; set; }
+
+    public string? BackImageDataUrl { get; set; }
 }

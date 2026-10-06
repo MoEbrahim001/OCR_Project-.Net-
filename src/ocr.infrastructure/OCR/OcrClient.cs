@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using Microsoft.Extensions.Configuration;
-using Ocr.Domain.Dtos;
-using Ocr.Domain.Services;
+using Ocr.Core.Abstractions;
+using Ocr.Core.OCR.DTOs;
 
 namespace Ocr.Infrastructure.OCR
 
@@ -21,23 +21,71 @@ namespace Ocr.Infrastructure.OCR
         }
 
         private async Task<OcrExtraction> SendAsync(
-            string pathTemplate,
-            Stream imageStream,
-            string fileName,
-            string? contentType,
-            int threshold,
-            CancellationToken ct)
+         string pathTemplate,
+         Stream imageStream,
+         string fileName,
+         string? contentType,
+         int threshold,
+         CancellationToken ct)
         {
-            var path = (pathTemplate ?? string.Empty);
-            if (!path.StartsWith("/")) path = "/" + path;
+            var path = pathTemplate ?? string.Empty;
 
-            using var content = new MultipartFormDataContent();
-            var fileContent = new StreamContent(imageStream);
-            fileContent.Headers.ContentType = new MediaTypeHeaderValue(contentType ?? "application/octet-stream");
-content.Add(fileContent, "file", fileName);
-            using var resp = await _http.PostAsync(path, content, ct);
-            var raw = await resp.Content.ReadAsStringAsync(ct);
-            resp.EnsureSuccessStatusCode();
+            if (!path.StartsWith("/"))
+            {
+                path = "/" + path;
+            }
+
+            var separator =
+                path.Contains('?')
+                    ? "&"
+                    : "?";
+
+            path =
+                $"{path}{separator}threshold={threshold}";
+
+
+            using var content =
+                new MultipartFormDataContent();
+
+            var fileContent =
+                new StreamContent(imageStream);
+
+            fileContent.Headers.ContentType =
+                new MediaTypeHeaderValue(
+                    contentType
+                    ?? "application/octet-stream"
+                );
+
+            content.Add(
+                fileContent,
+                "file",
+                fileName
+            );
+
+
+            using var response =
+                await _http.PostAsync(
+                    path,
+                    content,
+                    ct
+                );
+
+            var raw =
+                await response.Content
+                    .ReadAsStringAsync(ct);
+
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException(
+                    $"Python OCR returned " +
+                    $"{(int)response.StatusCode} " +
+                    $"{response.StatusCode}. " +
+                    $"Body: {raw}"
+                );
+            }
+
+
             return new OcrExtraction(raw);
         }
 
