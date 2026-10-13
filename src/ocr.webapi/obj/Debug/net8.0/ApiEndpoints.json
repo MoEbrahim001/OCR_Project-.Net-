@@ -244,6 +244,80 @@
   },
   {
     "ContainingType": "Ocr.WebApi.Controllers.RecordsController",
+    "Method": "ExportExcel",
+    "RelativePath": "api/Records/export/excel",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "name",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "idNumber",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Ocr.WebApi.Controllers.RecordsController",
+    "Method": "ExportSelectedExcel",
+    "RelativePath": "api/Records/export/excel/selected",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Ocr.WebApi.Requests.ExportSelectedRecordsRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Ocr.WebApi.Controllers.RecordsController",
+    "Method": "ExportPdf",
+    "RelativePath": "api/Records/export/pdf",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "name",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "idNumber",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Ocr.WebApi.Controllers.RecordsController",
+    "Method": "ExportSelectedPdf",
+    "RelativePath": "api/Records/export/pdf/selected",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "Ocr.WebApi.Requests.ExportSelectedRecordsRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Ocr.WebApi.Controllers.RecordsController",
     "Method": "Search",
     "RelativePath": "api/Records/Search",
     "HttpMethod": "GET",

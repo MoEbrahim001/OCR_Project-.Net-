@@ -15,9 +15,13 @@ using Ocr.Domain.UnitOfWork;
 
 using Ocr.Infrastructure.OCR;
 using Ocr.Infrastructure.Persistence;
-using Ocr.Infrastructure.Persistence.Repositories;
 using Ocr.Infrastructure.Persistence.UnitOfWork;
-
+using Ocr.Infrastructure.Persistence.Repositories;
+using QuestPDF.Infrastructure;
+QuestPDF.Settings.License =
+    LicenseType.Evaluation;
+QuestPDF.Settings.UseSystemFonts =
+    true;
 var builder = WebApplication.CreateBuilder(args);
 
 
