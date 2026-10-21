@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Ocr.Domain.Models;
 using Ocr.Domain.Repositories;
 using Ocr.Model.Entities;
 
@@ -294,10 +295,7 @@ public class RecordRepository : IRecordRepository
         IReadOnlyList<Record> Items,
         int TotalCount)>
         SearchAsync(
-            string? name,
-            string? idNumber,
-            int pageNumber,
-            int pageSize,
+            RecordSearchCriteria criteria,
             CancellationToken ct = default)
     {
         IQueryable<Record> query =
@@ -305,56 +303,231 @@ public class RecordRepository : IRecordRepository
                 .AsNoTracking();
 
 
-        // =================================================
-        // NAME
-        // =================================================
+        // =========================================
+        // NAME - Contains
+        // =========================================
 
-        if (!string.IsNullOrWhiteSpace(name))
+        if (!string.IsNullOrWhiteSpace(criteria.Name))
         {
-            var nameTerm =
-                name.Trim();
+            var value =
+                criteria.Name.Trim();
 
             query =
                 query.Where(r =>
-
                     r.Name != null
-
                     &&
-
                     EF.Functions.Like(
                         r.Name,
-                        $"%{nameTerm}%"
+                        $"%{value}%"
                     )
                 );
         }
 
 
-        // =================================================
-        // NATIONAL ID
-        // =================================================
+        // =========================================
+        // NATIONAL ID - Contains
+        // =========================================
 
-        if (!string.IsNullOrWhiteSpace(idNumber))
+        if (!string.IsNullOrWhiteSpace(criteria.IdNumber))
         {
-            var idTerm =
-                idNumber
+            var value =
+                criteria.IdNumber
                     .Trim()
                     .Replace(" ", "");
 
-
             query =
                 query.Where(r =>
-
                     r.IdNumber != null
-
                     &&
-
                     EF.Functions.Like(
                         r.IdNumber.Replace(
                             " ",
                             ""
                         ),
-                        $"%{idTerm}%"
+                        $"%{value}%"
                     )
+                );
+        }
+
+
+        // =========================================
+        // ADDRESS - Contains
+        // =========================================
+
+        if (!string.IsNullOrWhiteSpace(criteria.Address))
+        {
+            var value =
+                criteria.Address.Trim();
+
+            query =
+                query.Where(r =>
+                    r.Address != null
+                    &&
+                    EF.Functions.Like(
+                        r.Address,
+                        $"%{value}%"
+                    )
+                );
+        }
+
+
+        // =========================================
+        // GENDER - Exact
+        // =========================================
+
+        if (!string.IsNullOrWhiteSpace(criteria.Gender))
+        {
+            var value =
+                criteria.Gender.Trim();
+
+            query =
+                query.Where(r =>
+                    r.Gender == value
+                );
+        }
+
+
+        // =========================================
+        // DOB - Exact
+        // =========================================
+
+        if (criteria.DateOfBirth.HasValue)
+        {
+            query =
+                query.Where(r =>
+                    r.DateOfBirth ==
+                    criteria.DateOfBirth.Value
+                );
+        }
+
+
+        // =========================================
+        // AGE
+        // Age is derived from DateOfBirth.
+        // =========================================
+
+        if (
+            criteria.Age.HasValue
+            &&
+            criteria.Age.Value >= 0
+        )
+        {
+            var today =
+                DateOnly.FromDateTime(
+                    DateTime.Today
+                );
+
+            var newestDob =
+                today.AddYears(
+                    -criteria.Age.Value
+                );
+
+            var oldestDobExclusive =
+                today.AddYears(
+                    -(criteria.Age.Value + 1)
+                );
+
+            query =
+                query.Where(r =>
+                    r.DateOfBirth.HasValue
+                    &&
+                    r.DateOfBirth.Value
+                        > oldestDobExclusive
+                    &&
+                    r.DateOfBirth.Value
+                        <= newestDob
+                );
+        }
+
+
+        // =========================================
+        // RELIGION - Exact
+        // =========================================
+
+        if (!string.IsNullOrWhiteSpace(criteria.Religion))
+        {
+            var value =
+                criteria.Religion.Trim();
+
+            query =
+                query.Where(r =>
+                    r.Religion == value
+                );
+        }
+
+
+        // =========================================
+        // OCCUPATION - Contains
+        // =========================================
+
+        if (!string.IsNullOrWhiteSpace(criteria.Profession))
+        {
+            var value =
+                criteria.Profession.Trim();
+
+            query =
+                query.Where(r =>
+                    r.Profession != null
+                    &&
+                    EF.Functions.Like(
+                        r.Profession,
+                        $"%{value}%"
+                    )
+                );
+        }
+
+
+        // =========================================
+        // MARITAL STATUS - Exact
+        // =========================================
+
+        if (!string.IsNullOrWhiteSpace(criteria.MaritalStatus))
+        {
+            var value =
+                criteria.MaritalStatus.Trim();
+
+            query =
+                query.Where(r =>
+                    r.MaritalStatus == value
+                );
+        }
+
+
+        // =========================================
+        // HUSBAND NAME
+        // Uncomment ONLY when Record entity contains
+        // HusbandName and DB column exists.
+        // =========================================
+
+        /*
+        if (!string.IsNullOrWhiteSpace(criteria.HusbandName))
+        {
+            var value =
+                criteria.HusbandName.Trim();
+
+            query =
+                query.Where(r =>
+                    r.HusbandName != null
+                    &&
+                    EF.Functions.Like(
+                        r.HusbandName,
+                        $"%{value}%"
+                    )
+                );
+        }
+        */
+
+
+        // =========================================
+        // EXPIRY DATE - Exact
+        // =========================================
+
+        if (criteria.EndDate.HasValue)
+        {
+            query =
+                query.Where(r =>
+                    r.EndDate ==
+                    criteria.EndDate.Value
                 );
         }
 
@@ -371,11 +544,13 @@ public class RecordRepository : IRecordRepository
                 )
 
                 .Skip(
-                    (pageNumber - 1)
-                    * pageSize
+                    (criteria.PageNumber - 1)
+                    * criteria.PageSize
                 )
 
-                .Take(pageSize)
+                .Take(
+                    criteria.PageSize
+                )
 
                 .ToListAsync(ct);
 

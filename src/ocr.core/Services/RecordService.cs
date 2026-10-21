@@ -14,7 +14,7 @@ using ClosedXML.Excel;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-
+using Ocr.Domain.Storage;
 using Ocr.Core.Abstractions;
 using Ocr.Domain.Services;
 using Ocr.Domain.UnitOfWork;
@@ -22,6 +22,8 @@ using Ocr.Model.Entities;
 using Ocr.ViewModel;
 
 using ocr.viewmodel;
+using Ocr.Domain.Models;
+using DocumentFormat.OpenXml.Vml;
 
 namespace Ocr.Core.Services;
 
@@ -30,16 +32,17 @@ public class RecordService : IRecordService
     private readonly IUnitOfWork _uow;
     private readonly IOcrClient _ocrClient;
     private readonly IOcrParser _parser;
-
+    private readonly IImageStorage _imageStorage;
 
     public RecordService(
         IUnitOfWork uow,
         IOcrClient ocrClient,
-        IOcrParser parser)
+        IOcrParser parser, IImageStorage imageStorage)
     {
         _uow = uow;
         _ocrClient = ocrClient;
         _parser = parser;
+        _imageStorage = imageStorage;
     }
 
 
@@ -588,69 +591,137 @@ public class RecordService : IRecordService
     // =====================================================
 
     public async Task<RecordDto> CreateAsync(
-        CreateUpdateRecordDto dto)
+     CreateUpdateRecordDto dto)
     {
-        var record =
-            new Record
-            {
-                Name =
-                    dto.Name,
+        string? frontImageKey = null;
+        string? backImageKey = null;
 
-                IdNumber =
-                    NormalizeDigits(
-                        dto.IdNumber
-                    ),
-
-                DateOfBirth =
-                    dto.DateOfBirth,
-
-                Address =
-                    dto.Address,
-
-                Gender =
-                    dto.Gender,
-
-                Profession =
-                    dto.Profession,
-
-                MaritalStatus =
-                    dto.MaritalStatus,
-
-                Religion =
-                    dto.Religion,
-
-                EndDate =
-                    dto.EndDate,
-
-                PhotoBase64 =
-                    dto.PhotoBase64,
-
-                FaceBase64 =
-                    dto.FaceBase64,
-
-                Notes =
-                    dto.Notes,
-
-                FrontImageDataUrl =
-                    dto.FrontImageDataUrl,
-
-                BackImageDataUrl =
-                    dto.BackImageDataUrl
-            };
-
-
-        await _uow.Records
-            .AddAsync(record);
-
-
-        await _uow
-            .SaveChangesAsync();
-
-
-        // Do NOT send images back.
-        return ToSaveDto(
-            record
+        try
+        {
+         
+            frontImageKey =
+        await SaveDataUrlAsync(
+            dto.FrontImageDataUrl,
+            ImageSide.Front
         );
+
+            backImageKey =
+                await SaveDataUrlAsync(
+                    dto.BackImageDataUrl,
+                    ImageSide.Back
+                );
+
+
+            // ==========================================
+            // RECORD
+            // ==========================================
+
+            var record =
+                new Record
+                {
+                    Name =
+                        dto.Name,
+
+                    IdNumber =
+                        NormalizeDigits(
+                            dto.IdNumber
+                        ),
+
+                    DateOfBirth =
+                        dto.DateOfBirth,
+
+                    Address =
+                        dto.Address,
+
+                    Gender =
+                        dto.Gender,
+
+                    Profession =
+                        dto.Profession,
+
+                    MaritalStatus =
+                        dto.MaritalStatus,
+
+                    Religion =
+                        dto.Religion,
+
+                    EndDate =
+                        dto.EndDate,
+
+                    PhotoBase64 =
+                        dto.PhotoBase64,
+
+                    FaceBase64 =
+                        dto.FaceBase64,
+
+                    Notes =
+                        dto.Notes,
+
+                    // IMPORTANT:
+                    // These now contain STORAGE KEYS,
+                    // not Base64 Data URLs.
+
+                    FrontImageDataUrl =
+                        frontImageKey,
+
+                    BackImageDataUrl =
+                        backImageKey
+                };
+
+
+            await _uow.Records
+                .AddAsync(record);
+
+
+            await _uow
+                .SaveChangesAsync();
+
+
+            return ToSaveDto(
+                record
+            );
+        }
+        catch
+        {
+            // If DB/save fails,
+            // don't leave orphan image files.
+
+            if (
+                !string.IsNullOrWhiteSpace(
+                    frontImageKey
+                )
+                &&
+                !frontImageKey.StartsWith(
+                    "data:image/",
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
+            {
+                await _imageStorage.DeleteAsync(
+                    frontImageKey
+                );
+            }
+
+
+            if (
+                !string.IsNullOrWhiteSpace(
+                    backImageKey
+                )
+                &&
+                !backImageKey.StartsWith(
+                    "data:image/",
+                    StringComparison.OrdinalIgnoreCase
+                )
+            )
+            {
+                await _imageStorage.DeleteAsync(
+                    backImageKey
+                );
+            }
+
+
+            throw;
+        }
     }
 
 
@@ -782,49 +853,79 @@ public class RecordService : IRecordService
     // =====================================================
 
     public async Task<PagedResult<RecordDto>>
-        SearchAsync(
-            string? name,
-            string? idNumber,
-            int pageNumber,
-            int pageSize)
+     SearchAsync(
+         RecordSearchCriteria criteria)
     {
-        if (pageNumber <= 0)
+        if (criteria.PageNumber <= 0)
         {
-            pageNumber = 1;
+            criteria.PageNumber = 1;
         }
 
 
         if (
-            pageSize <= 0
+            criteria.PageSize <= 0
             ||
-            pageSize > 100
+            criteria.PageSize > 100
         )
         {
-            pageSize = 10;
+            criteria.PageSize = 10;
         }
 
 
-        var nameTerm =
-            string.IsNullOrWhiteSpace(name)
-                ? null
-                : name.Trim();
+        criteria.Name =
+            CleanSearchText(
+                criteria.Name
+            );
 
 
-        var idTerm =
+        criteria.IdNumber =
             NormalizeDigits(
-                string.IsNullOrWhiteSpace(idNumber)
-                    ? null
-                    : idNumber.Trim()
+                CleanSearchText(
+                    criteria.IdNumber
+                )
+            );
+
+
+        criteria.Address =
+            CleanSearchText(
+                criteria.Address
+            );
+
+
+        criteria.Gender =
+            CleanSearchText(
+                criteria.Gender
+            );
+
+
+        criteria.Religion =
+            CleanSearchText(
+                criteria.Religion
+            );
+
+
+        criteria.Profession =
+            CleanSearchText(
+                criteria.Profession
+            );
+
+
+        criteria.MaritalStatus =
+            CleanSearchText(
+                criteria.MaritalStatus
+            );
+
+
+        criteria.HusbandName =
+            CleanSearchText(
+                criteria.HusbandName
             );
 
 
         var result =
             await _uow.Records
                 .SearchAsync(
-                    nameTerm,
-                    idTerm,
-                    pageNumber,
-                    pageSize
+                    criteria
                 );
 
 
@@ -836,14 +937,23 @@ public class RecordService : IRecordService
                     .ToList(),
 
             PageNumber =
-                pageNumber,
+                criteria.PageNumber,
 
             PageSize =
-                pageSize,
+                criteria.PageSize,
 
             TotalCount =
                 result.TotalCount
         };
+    }
+
+
+    private static string? CleanSearchText(
+        string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim();
     }
 
 
@@ -1568,5 +1678,101 @@ public class RecordService : IRecordService
 
         return document
             .GeneratePdf();
+    }
+    private async Task<string?> SaveDataUrlAsync(
+       string? dataUrl,
+       ImageSide side,
+       CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(dataUrl))
+        {
+            return null;
+        }
+
+        if (
+            !dataUrl.StartsWith(
+                "data:image/",
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
+        {
+            return dataUrl;
+        }
+
+        var commaIndex =
+            dataUrl.IndexOf(',');
+
+        if (commaIndex <= 0)
+        {
+            throw new InvalidOperationException(
+                "Invalid image Data URL."
+            );
+        }
+
+        var header =
+            dataUrl.Substring(
+                0,
+                commaIndex
+            );
+
+        var base64 =
+            dataUrl.Substring(
+                commaIndex + 1
+            );
+
+        string contentType;
+
+        if (
+            header.StartsWith(
+                "data:image/jpeg",
+                StringComparison.OrdinalIgnoreCase
+            )
+            ||
+            header.StartsWith(
+                "data:image/jpg",
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
+        {
+            contentType = "image/jpeg";
+        }
+        else if (
+            header.StartsWith(
+                "data:image/png",
+                StringComparison.OrdinalIgnoreCase
+            )
+        )
+        {
+            contentType = "image/png";
+        }
+        else
+        {
+            throw new InvalidOperationException(
+                "Only JPEG and PNG images are supported."
+            );
+        }
+
+        byte[] bytes;
+
+        try
+        {
+            bytes =
+                Convert.FromBase64String(
+                    base64
+                );
+        }
+        catch (FormatException)
+        {
+            throw new InvalidOperationException(
+                "Invalid Base64 image data."
+            );
+        }
+
+        return await _imageStorage.SaveAsync(
+            bytes,
+            contentType,
+            side,
+            ct
+        );
     }
 }

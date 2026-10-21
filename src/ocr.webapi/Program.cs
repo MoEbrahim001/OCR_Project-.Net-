@@ -18,6 +18,9 @@ using Ocr.Infrastructure.Persistence;
 using Ocr.Infrastructure.Persistence.UnitOfWork;
 using Ocr.Infrastructure.Persistence.Repositories;
 using QuestPDF.Infrastructure;
+using Ocr.Domain.Storage;
+using Ocr.Infrastructure.Storage;
+using ocr.infrastructure.Storage;
 QuestPDF.Settings.License =
     LicenseType.Evaluation;
 QuestPDF.Settings.UseSystemFonts =
@@ -37,7 +40,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(connString);
 });
+builder.Services.Configure<ImageStorageOptions>(
+    builder.Configuration.GetSection("ImageStorage")
+);
 
+builder.Services.AddScoped<
+    IImageStorage,
+    LocalImageStorage
+>();
 
 // =====================================================
 // CORS

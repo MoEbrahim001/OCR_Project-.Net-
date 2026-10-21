@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Ocr.Domain.Models;
 using Ocr.Model.Entities;
 
 namespace Ocr.Domain.Repositories;
@@ -24,12 +25,12 @@ public interface IRecordRepository
         int pageSize,
         CancellationToken ct = default);
 
-    Task<(IReadOnlyList<Record> Items, int TotalCount)> SearchAsync(
-        string? name,
-        string? idNumber,
-        int pageNumber,
-        int pageSize,
-        CancellationToken ct = default);
+    Task<(
+            IReadOnlyList<Record> Items,
+            int TotalCount)>
+            SearchAsync(
+                RecordSearchCriteria criteria,
+                CancellationToken ct = default);
 
     Task<IReadOnlyList<Record>> GetForExportAsync(
         string? name,

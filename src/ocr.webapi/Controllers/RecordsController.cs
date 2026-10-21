@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Ocr.Domain.Models;
 using Ocr.Domain.Services;
 using Ocr.ViewModel;
 using Ocr.WebApi.Requests;
@@ -147,20 +148,13 @@ public class RecordsController : ControllerBase
     // =====================================================
     // SEARCH
     // =====================================================
-
     [HttpGet("Search")]
     public async Task<ActionResult<PagedResult<RecordDto>>> Search(
-        [FromQuery] string? name,
-        [FromQuery] string? idNumber,
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10)
+        [FromQuery] RecordSearchCriteria criteria)
     {
         var result =
             await _svc.SearchAsync(
-                name,
-                idNumber,
-                pageNumber,
-                pageSize
+                criteria
             );
 
         return Ok(result);

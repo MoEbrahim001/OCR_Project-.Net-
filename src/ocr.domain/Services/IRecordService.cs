@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Ocr.Domain.Models;
 using Ocr.Model.Entities;
 using Ocr.ViewModel;
 
@@ -34,10 +35,7 @@ public interface IRecordService
         CreateUpdateRecordDto? overrideDto = null);
 
     Task<PagedResult<RecordDto>> SearchAsync(
-        string? name,
-        string? idNumber,
-        int pageNumber,
-        int pageSize);
+       RecordSearchCriteria criteria);
 
     // Existing export by search filters
     Task<byte[]> ExportExcelAsync(
