@@ -229,3 +229,4 @@ C:\Users\dell\Desktop\OCR_Project-.Net-\src\ocr.webapi\obj\Debug\net8.0\refint\o
 C:\Users\dell\Desktop\OCR_Project-.Net-\src\ocr.webapi\obj\Debug\net8.0\ocr.webapi.pdb
 C:\Users\dell\Desktop\OCR_Project-.Net-\src\ocr.webapi\obj\Debug\net8.0\ocr.webapi.genruntimeconfig.cache
 C:\Users\dell\Desktop\OCR_Project-.Net-\src\ocr.webapi\obj\Debug\net8.0\ref\ocr.webapi.dll
+C:\Users\dell\Desktop\OCR_Project-.Net-\src\ocr.webapi\bin\Debug\net8.0\ocr.webapi.staticwebassets.runtime.json

@@ -12,19 +12,23 @@ using Ocr.Core.Services;
 using Ocr.Domain.Repositories;
 using Ocr.Domain.Services;
 using Ocr.Domain.UnitOfWork;
+using Ocr.Domain.Storage;
 
 using Ocr.Infrastructure.OCR;
 using Ocr.Infrastructure.Persistence;
 using Ocr.Infrastructure.Persistence.UnitOfWork;
 using Ocr.Infrastructure.Persistence.Repositories;
-using QuestPDF.Infrastructure;
-using Ocr.Domain.Storage;
 using Ocr.Infrastructure.Storage;
+
 using ocr.infrastructure.Storage;
-QuestPDF.Settings.License =
-    LicenseType.Evaluation;
-QuestPDF.Settings.UseSystemFonts =
-    true;
+
+using QuestPDF.Infrastructure;
+
+
+QuestPDF.Settings.License = LicenseType.Evaluation;
+QuestPDF.Settings.UseSystemFonts = true;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 
@@ -40,14 +44,18 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(connString);
 });
+
+
+// =====================================================
+// Image Storage
+// =====================================================
+
 builder.Services.Configure<ImageStorageOptions>(
     builder.Configuration.GetSection("ImageStorage")
 );
 
-builder.Services.AddScoped<
-    IImageStorage,
-    LocalImageStorage
->();
+builder.Services.AddScoped<IImageStorage, LocalImageStorage>();
+
 
 // =====================================================
 // CORS
@@ -58,13 +66,14 @@ const string AllowDevAll = "AllowDevAll";
 
 builder.Services.AddCors(options =>
 {
-    // Production Angular policy
+    // Angular development server
     options.AddPolicy(AllowAngular, policy =>
     {
         policy
             .WithOrigins(
                 "http://localhost:4200",
-                "https://localhost:4200")
+                "https://localhost:4200"
+            )
             .AllowAnyHeader()
             .AllowAnyMethod()
             .WithExposedHeaders("Content-Disposition");
@@ -97,10 +106,12 @@ builder.Services
             JavaScriptEncoder.Create(UnicodeRanges.All);
 
         options.JsonSerializerOptions.Converters.Add(
-            new DateOnlyJsonConverter());
+            new DateOnlyJsonConverter()
+        );
 
         options.JsonSerializerOptions.Converters.Add(
-            new NullableDateOnlyJsonConverter());
+            new NullableDateOnlyJsonConverter()
+        );
     });
 
 
@@ -148,16 +159,8 @@ builder.Services.AddScoped<IRecordService, RecordService>();
 // OCR
 // --------------------
 
-// Contract:
-// Ocr.Core.Abstractions.IOcrClient
-//
-// Implementation:
-// Ocr.Infrastructure.OCR.OcrClient
-
 builder.Services.AddHttpClient<IOcrClient, OcrClient>();
 
-
-// OCR response parser
 builder.Services.AddSingleton<IOcrParser, OcrParser>();
 
 
@@ -182,16 +185,20 @@ if (app.Environment.IsDevelopment())
 }
 
 
-// Redirect root URL to Swagger
-app.MapGet("/", context =>
-{
-    context.Response.Redirect("/swagger");
-
-    return Task.CompletedTask;
-});
-
+// =====================================================
+// HTTPS
+// =====================================================
 
 app.UseHttpsRedirection();
+
+
+// =====================================================
+// Angular Static Files
+// =====================================================
+
+app.UseDefaultFiles();
+
+app.UseStaticFiles();
 
 
 // =====================================================
@@ -216,6 +223,13 @@ app.MapControllers();
 
 
 // =====================================================
+// Angular SPA Fallback
+// =====================================================
+
+app.MapFallbackToFile("index.html");
+
+
+// =====================================================
 // Run
 // =====================================================
 
@@ -236,7 +250,9 @@ public sealed class DateOnlyJsonConverter
         Type typeToConvert,
         JsonSerializerOptions options)
     {
-        return DateOnly.Parse(reader.GetString()!);
+        return DateOnly.Parse(
+            reader.GetString()!
+        );
     }
 
     public override void Write(
@@ -245,7 +261,8 @@ public sealed class DateOnlyJsonConverter
         JsonSerializerOptions options)
     {
         writer.WriteStringValue(
-            value.ToString(Format));
+            value.ToString(Format)
+        );
     }
 }
 
@@ -266,7 +283,8 @@ public sealed class NullableDateOnlyJsonConverter
         }
 
         return DateOnly.Parse(
-            reader.GetString()!);
+            reader.GetString()!
+        );
     }
 
     public override void Write(
@@ -281,6 +299,7 @@ public sealed class NullableDateOnlyJsonConverter
         }
 
         writer.WriteStringValue(
-            value.Value.ToString(Format));
+            value.Value.ToString(Format)
+        );
     }
 }
