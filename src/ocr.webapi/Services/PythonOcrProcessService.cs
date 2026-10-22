@@ -74,29 +74,71 @@ public sealed class PythonOcrProcessService : IHostedService
             Path.GetDirectoryName(exePath)!;
 
         var startInfo =
-            new ProcessStartInfo
-            {
-                FileName = exePath,
-                WorkingDirectory = workingDirectory,
+    new ProcessStartInfo
+    {
+        FileName = exePath,
+        WorkingDirectory = workingDirectory,
 
-                UseShellExecute = false,
+        UseShellExecute = false,
+        CreateNoWindow = true,
+        WindowStyle = ProcessWindowStyle.Hidden,
 
-                CreateNoWindow = true,
-
-                WindowStyle =
-                    ProcessWindowStyle.Hidden
-            };
+        RedirectStandardOutput = true,
+        RedirectStandardError = true
+    };
 
         // Give Paddle enough time for cold-start inference.
         startInfo.Environment[
             "OCR_PADDLE_TIMEOUT"
         ] = "120";
+        startInfo.Environment[
+    "PYTHONUNBUFFERED"
+] = "1";
+        _process = new Process
+        {
+            StartInfo = startInfo,
+            EnableRaisingEvents = true
+        };
 
-        _process =
-            Process.Start(startInfo)
-            ?? throw new InvalidOperationException(
+        _process.OutputDataReceived += (_, e) =>
+        {
+            if (!string.IsNullOrWhiteSpace(e.Data))
+            {
+                _logger.LogInformation(
+                    "[Python OCR] {Message}",
+                    e.Data
+                );
+            }
+        };
+
+        _process.ErrorDataReceived += (_, e) =>
+        {
+            if (!string.IsNullOrWhiteSpace(e.Data))
+            {
+                _logger.LogWarning(
+                    "[Python OCR] {Message}",
+                    e.Data
+                );
+            }
+        };
+
+        _process.Exited += (_, _) =>
+        {
+            _logger.LogError(
+                "OCR Python process exited. ExitCode: {ExitCode}",
+                _process?.ExitCode
+            );
+        };
+
+        if (!_process.Start())
+        {
+            throw new InvalidOperationException(
                 "Could not start OCR Python service."
             );
+        }
+
+        _process.BeginOutputReadLine();
+        _process.BeginErrorReadLine();
 
         _ownsProcess = true;
 
