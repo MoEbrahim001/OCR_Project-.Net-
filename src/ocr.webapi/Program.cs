@@ -23,6 +23,7 @@ using Ocr.Infrastructure.Storage;
 using ocr.infrastructure.Storage;
 
 using QuestPDF.Infrastructure;
+using Ocr.WebApi.Services;
 
 
 QuestPDF.Settings.License = LicenseType.Evaluation;
@@ -30,20 +31,62 @@ QuestPDF.Settings.UseSystemFonts = true;
 
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseUrls("http://127.0.0.1:5100");
 
-
+// =====================================================
 // =====================================================
 // Database
 // =====================================================
 
-var connString =
-    builder.Configuration.GetConnectionString("Default")
-    ?? "Server=localhost;Database=OcrDb;Trusted_Connection=True;TrustServerCertificate=True;";
+var databaseProvider =
+    builder.Configuration["DatabaseProvider"]
+    ?? "SqlServer";
 
-builder.Services.AddDbContext<AppDbContext>(options =>
+var useSqlite = databaseProvider.Equals(
+    "Sqlite",
+    StringComparison.OrdinalIgnoreCase
+);
+Console.WriteLine($"DatabaseProvider = {databaseProvider}");
+Console.WriteLine($"UseSqlite = {useSqlite}");
+if (useSqlite)
 {
-    options.UseSqlServer(connString);
-});
+    var dataDirectory = Path.Combine(
+        Environment.GetFolderPath(
+            Environment.SpecialFolder.CommonApplicationData
+        ),
+        "OcrSuiteDemo",
+        "Data"
+    );
+
+    Directory.CreateDirectory(dataDirectory);
+
+    var databasePath = Path.Combine(
+        dataDirectory,
+        "OcrSuite.db"
+    );
+    Console.WriteLine($"SQLite Path = {databasePath}");
+    builder.Services.AddDbContext<AppDbContext>(
+        options =>
+        {
+            options.UseSqlite(
+                $"Data Source={databasePath}"
+            );
+        }
+    );
+}
+else
+{
+    var connString =
+        builder.Configuration.GetConnectionString("Default")
+        ?? "Server=localhost;Database=OcrDb;Trusted_Connection=True;TrustServerCertificate=True;";
+
+    builder.Services.AddDbContext<AppDbContext>(
+        options =>
+        {
+            options.UseSqlServer(connString);
+        }
+    );
+}
 
 
 // =====================================================
@@ -162,7 +205,7 @@ builder.Services.AddScoped<IRecordService, RecordService>();
 builder.Services.AddHttpClient<IOcrClient, OcrClient>();
 
 builder.Services.AddSingleton<IOcrParser, OcrParser>();
-
+builder.Services.AddHostedService<PythonOcrProcessService>();
 
 // =====================================================
 // Build Application
@@ -170,7 +213,21 @@ builder.Services.AddSingleton<IOcrParser, OcrParser>();
 
 var app = builder.Build();
 
+// =====================================================
+// Initialize Database
+// =====================================================
 
+if (useSqlite)
+{
+    using var scope = app.Services.CreateScope();
+
+    var db =
+        scope.ServiceProvider
+            .GetRequiredService<AppDbContext>();
+
+    db.Database.EnsureCreated();
+    Console.WriteLine("SQLite database initialized.");
+}
 // =====================================================
 // HTTP Pipeline
 // =====================================================
@@ -189,7 +246,7 @@ if (app.Environment.IsDevelopment())
 // HTTPS
 // =====================================================
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 
 // =====================================================

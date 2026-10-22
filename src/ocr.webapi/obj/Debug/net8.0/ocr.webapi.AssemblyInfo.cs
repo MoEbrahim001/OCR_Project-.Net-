@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ocr.webapi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1fa1bcb0d80871ba949a7ecf0026806df9ed80fe")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b6c685ab8fc17b4a45843680b4655d37b71ff4d5")]
 [assembly: System.Reflection.AssemblyProductAttribute("ocr.webapi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ocr.webapi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ocr.domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2f815f9f38c0938d508515ff7a888a42911af1db")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b6c685ab8fc17b4a45843680b4655d37b71ff4d5")]
 [assembly: System.Reflection.AssemblyProductAttribute("ocr.domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ocr.domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
