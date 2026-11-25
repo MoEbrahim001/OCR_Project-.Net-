@@ -27,6 +27,11 @@ using DocumentFormat.OpenXml.Vml;
 
 namespace Ocr.Core.Services;
 
+public sealed class NationalIdValidationException : Exception
+{
+    public NationalIdValidationException(string message) : base(message) { }
+}
+
 public class RecordService : IRecordService
 {
     private readonly IUnitOfWork _uow;
@@ -421,6 +426,9 @@ public class RecordService : IRecordService
                 backExtraction
             );
 
+        var nationalId = RequireNationalId(frontSmart.NationalId);
+        ValidateCardPair(nationalId, frontSmart.NationalId, backSmart.NationalId);
+
 
         // =================================================
         // IMAGES
@@ -452,10 +460,7 @@ public class RecordService : IRecordService
                     ?? frontRaw?.name,
 
                 IdNumber =
-                    NormalizeDigits(
-                        frontSmart.NationalId
-                        ?? frontRaw?.ID
-                    ),
+                    nationalId,
 
                 DateOfBirth =
                     ParseYmd(
@@ -593,12 +598,21 @@ public class RecordService : IRecordService
     public async Task<RecordDto> CreateAsync(
      CreateUpdateRecordDto dto)
     {
+        var nationalId = RequireNationalId(dto.IdNumber);
+
+        if (!string.IsNullOrWhiteSpace(dto.FrontImageDataUrl) ||
+            !string.IsNullOrWhiteSpace(dto.BackImageDataUrl))
+        {
+            await ValidateCardImagesAsync(nationalId,
+                dto.FrontImageDataUrl, dto.BackImageDataUrl, null, null);
+        }
+
         string? frontImageKey = null;
         string? backImageKey = null;
 
         try
         {
-         
+
             frontImageKey =
         await SaveDataUrlAsync(
             dto.FrontImageDataUrl,
@@ -623,9 +637,7 @@ public class RecordService : IRecordService
                         dto.Name,
 
                     IdNumber =
-                        NormalizeDigits(
-                            dto.IdNumber
-                        ),
+                        nationalId,
 
                     DateOfBirth =
                         dto.DateOfBirth,
@@ -653,6 +665,7 @@ public class RecordService : IRecordService
 
                     FaceBase64 =
                         dto.FaceBase64,
+                    Governorate = dto.Governorate,
 
                     Notes =
                         dto.Notes,
@@ -736,6 +749,35 @@ public class RecordService : IRecordService
         int id,
         CreateUpdateRecordDto dto)
     {
+        var current = await _uow.Records.GetByIdAsync(id);
+        if (current is null)
+        {
+            return null;
+        }
+
+        var frontChanged = dto.FrontImageDataUrl is not null;
+        var backChanged = dto.BackImageDataUrl is not null;
+        var nationalId = NormalizeDigits(dto.IdNumber)?.Trim();
+        var numberChanged = nationalId != NormalizeDigits(current.IdNumber)?.Trim();
+
+        if (frontChanged || backChanged || numberChanged)
+        {
+            nationalId = RequireNationalId(nationalId);
+
+            if (frontChanged || backChanged ||
+                !string.IsNullOrWhiteSpace(current.FrontImageDataUrl) ||
+                !string.IsNullOrWhiteSpace(current.BackImageDataUrl))
+            {
+                await ValidateCardImagesAsync(nationalId,
+                    dto.FrontImageDataUrl, dto.BackImageDataUrl,
+                    current.FrontImageDataUrl, current.BackImageDataUrl);
+            }
+        }
+        else
+        {
+            nationalId = current.IdNumber;
+        }
+
         var record =
             new Record
             {
@@ -746,9 +788,7 @@ public class RecordService : IRecordService
                     dto.Name,
 
                 IdNumber =
-                    NormalizeDigits(
-                        dto.IdNumber
-                    ),
+                    nationalId,
 
                 DateOfBirth =
                     dto.DateOfBirth,
@@ -1679,6 +1719,151 @@ public class RecordService : IRecordService
         return document
             .GeneratePdf();
     }
+    private static readonly Microsoft.Extensions.Caching.Memory.MemoryCache FrontScanIds =
+        new(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions { SizeLimit = 256 });
+
+    public static async Task RememberFrontScanAsync(
+        Stream image, int threshold, string? nationalId, CancellationToken ct)
+    {
+        var normalized = NormalizeDigits(nationalId)?.Trim();
+        if (!IsNationalId(normalized))
+        {
+            return;
+        }
+
+        var hash = await System.Security.Cryptography.SHA256.HashDataAsync(image, ct);
+        using var entry = FrontScanIds.CreateEntry((threshold, Convert.ToHexString(hash)));
+        entry.Size = 1;
+        entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+        entry.Value = normalized;
+    }
+
+    private static bool IsNationalId(string? value) =>
+        value is { Length: 14 } && value.All(c => c >= '0' && c <= '9');
+
+    private static string RequireNationalId(string? value)
+    {
+        var normalized = NormalizeDigits(value)?.Trim();
+        if (!IsNationalId(normalized))
+        {
+            throw new NationalIdValidationException("ID number must be 14 digits.");
+        }
+
+        return normalized!;
+    }
+
+    private static void ValidateCardPair(string nationalId, string? front, string? back)
+    {
+        front = NormalizeDigits(front)?.Trim();
+        back = NormalizeDigits(back)?.Trim();
+
+        var frontReadable = IsNationalId(front);
+        var backReadable = IsNationalId(back);
+
+        if (!frontReadable && !backReadable)
+        {
+            throw new NationalIdValidationException(
+                "OCR could not read a 14-digit national ID from either side. Rescan both sides.");
+        }
+
+        if (!frontReadable)
+        {
+            throw new NationalIdValidationException(
+                "OCR could not read a 14-digit national ID from the front. Rescan the front.");
+        }
+
+        if (!backReadable)
+        {
+            throw new NationalIdValidationException(
+                "OCR could not read a 14-digit national ID from the back. Rescan the back.");
+        }
+
+        if (front != back)
+        {
+            throw new NationalIdValidationException(
+                "The front and back national ID numbers do not match.");
+        }
+
+        if (nationalId != front)
+        {
+            throw new NationalIdValidationException(
+                "The national ID to save does not match the scanned card.");
+        }
+    }
+
+    private async Task ValidateCardImagesAsync(
+        string nationalId, string? newFront, string? newBack,
+        string? storedFront, string? storedBack)
+    {
+        var front = await ReadCardImageIdAsync(newFront, storedFront, ImageSide.Front);
+        var back = await ReadCardImageIdAsync(newBack, storedBack, ImageSide.Back);
+        ValidateCardPair(nationalId, front, back);
+    }
+
+    private async Task<string?> ReadCardImageIdAsync(
+        string? uploaded, string? stored, ImageSide side)
+    {
+        var image = uploaded ?? stored;
+        if (string.IsNullOrWhiteSpace(image))
+        {
+            return null;
+        }
+
+        Stream stream;
+        string contentType;
+        if (image.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase))
+        {
+            var (bytes, type) = DecodeCardImage(image);
+            stream = new MemoryStream(bytes);
+            contentType = type;
+        }
+        else
+        {
+            if (uploaded is not null)
+            {
+                throw new NationalIdValidationException(
+                    "Upload the replacement card image as JPEG or PNG.");
+            }
+
+            var existing = await _imageStorage.GetAsync(image);
+            if (existing is null)
+            {
+                return null;
+            }
+
+            stream = existing.Stream;
+            contentType = existing.ContentType;
+        }
+
+        using (stream)
+        {
+            var fileName = contentType == "image/png" ? "card.png" : "card.jpg";
+            const int threshold = 120;
+            if (side == ImageSide.Front)
+            {
+                if (uploaded is not null && stream.CanSeek)
+                {
+                    var start = stream.Position;
+                    var hash = await System.Security.Cryptography.SHA256.HashDataAsync(stream);
+                    stream.Position = start;
+                    if (FrontScanIds.TryGetValue((threshold, Convert.ToHexString(hash)), out var cachedId) &&
+                        cachedId is string verifiedId)
+                    {
+                        return verifiedId;
+                    }
+                }
+
+                var result = await _ocrClient.ExtractFrontAsync(
+                    stream, fileName, contentType, threshold);
+                return _parser.ParseFront(result).NationalId;
+            }
+
+            var backResult = await _ocrClient.ExtractBackAsync(
+                stream, fileName, contentType, threshold);
+            return _parser.ParseBack(backResult).NationalId;
+        }
+    }
+
     private async Task<string?> SaveDataUrlAsync(
        string? dataUrl,
        ImageSide side,
@@ -1699,12 +1884,23 @@ public class RecordService : IRecordService
             return dataUrl;
         }
 
+        var (bytes, contentType) = DecodeCardImage(dataUrl);
+        return await _imageStorage.SaveAsync(
+            bytes,
+            contentType,
+            side,
+            ct
+        );
+    }
+
+    private static (byte[] Bytes, string ContentType) DecodeCardImage(string dataUrl)
+    {
         var commaIndex =
             dataUrl.IndexOf(',');
 
         if (commaIndex <= 0)
         {
-            throw new InvalidOperationException(
+            throw new NationalIdValidationException(
                 "Invalid image Data URL."
             );
         }
@@ -1745,9 +1941,10 @@ public class RecordService : IRecordService
         {
             contentType = "image/png";
         }
+
         else
         {
-            throw new InvalidOperationException(
+            throw new NationalIdValidationException(
                 "Only JPEG and PNG images are supported."
             );
         }
@@ -1763,16 +1960,16 @@ public class RecordService : IRecordService
         }
         catch (FormatException)
         {
-            throw new InvalidOperationException(
+            throw new NationalIdValidationException(
                 "Invalid Base64 image data."
             );
         }
 
-        return await _imageStorage.SaveAsync(
-            bytes,
-            contentType,
-            side,
-            ct
-        );
+        if (bytes.Length == 0)
+        {
+            throw new NationalIdValidationException("Card image is empty.");
+        }
+
+        return (bytes, contentType);
     }
 }

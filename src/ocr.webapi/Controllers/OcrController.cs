@@ -1,3 +1,4 @@
+using Ocr.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 
 using Ocr.Core.Abstractions;
@@ -73,6 +74,9 @@ public class OcrController : ControllerBase
 
         var result =
             _parser.ParseFront(extraction);
+
+        await using var scanImage = file.OpenReadStream();
+        await RecordService.RememberFrontScanAsync(scanImage, t, result.NationalId, ct);
 
         return Ok(result);
     }
@@ -161,25 +165,33 @@ public class OcrController : ControllerBase
                 "Ocr:DefaultThreshold")
             ?? 120;
 
-        var record =
-            await _records.ImportAsync(
-                request.FrontImage,
-                request.BackImage,
-                threshold,
-                ct);
-
-        var dto =
-            await _records.GetAsync(
-                record.Id);
-
-        if (dto is null)
+        try
         {
-            return Problem(
-                "Record was created but could not be retrieved.");
+            var record =
+                await _records.ImportAsync(
+                    request.FrontImage,
+                    request.BackImage,
+                    threshold,
+                    ct);
+
+            var dto =
+                await _records.GetAsync(
+                    record.Id);
+
+            if (dto is null)
+            {
+                return Problem(
+                    "Record was created but could not be retrieved.");
+            }
+
+            return Created(
+                $"/api/Records/{record.Id}",
+                dto);
+        }
+        catch (NationalIdValidationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
 
-        return Created(
-            $"/api/Records/{record.Id}",
-            dto);
     }
 }

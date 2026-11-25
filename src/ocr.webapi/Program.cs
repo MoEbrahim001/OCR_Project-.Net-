@@ -9,8 +9,6 @@ using System.Text.Unicode;
 
 using Ocr.Core.Abstractions;
 using Ocr.Core.Services;
-
-using Ocr.Domain.Repositories;
 using Ocr.Domain.Services;
 using Ocr.Domain.UnitOfWork;
 using Ocr.Domain.Storage;
@@ -26,6 +24,8 @@ using ocr.infrastructure.Storage;
 using Ocr.WebApi.Services;
 
 using QuestPDF.Infrastructure;
+using Ocr.Application.Services.Dashboard;
+using Ocr.Domain.Repositories;
 
 
 // =====================================================
@@ -309,7 +309,10 @@ builder.Services.AddSingleton<
 builder.Services.AddHostedService<
     PythonOcrProcessService
 >();
-
+builder.Services.AddScoped<
+    IDashboardService,
+    DashboardService
+>();
 
 // =====================================================
 // Build Application

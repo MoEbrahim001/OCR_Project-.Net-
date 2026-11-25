@@ -33,4 +33,5 @@ public class CreateUpdateRecordDto
     public string? FrontImageDataUrl { get; set; }
 
     public string? BackImageDataUrl { get; set; }
+    public string? Governorate { get; set; }
 }

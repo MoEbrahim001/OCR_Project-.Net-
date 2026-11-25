@@ -1,5 +1,6 @@
 using Ocr.Domain.Repositories;
 using Ocr.Domain.UnitOfWork;
+using Ocr.Infrastructure.Persistence.Repositories;
 
 namespace Ocr.Infrastructure.Persistence.UnitOfWork;
 
@@ -8,7 +9,6 @@ public class UnitOfWork : IUnitOfWork
     private readonly AppDbContext _db;
 
     public IRecordRepository Records { get; }
-
     public UnitOfWork(
         AppDbContext db,
         IRecordRepository records)

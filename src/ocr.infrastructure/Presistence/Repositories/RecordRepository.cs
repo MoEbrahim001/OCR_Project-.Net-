@@ -229,18 +229,367 @@ public class RecordRepository : IRecordRepository
                 // the image exists.
 
                 FrontImageDataUrl =
-                    r.FrontImageDataUrl == null
-                        ? null
-                        : ImageExistsMarker,
+    r.FrontImageDataUrl,
 
                 BackImageDataUrl =
-                    r.BackImageDataUrl == null
-                        ? null
-                        : ImageExistsMarker
+    r.BackImageDataUrl
             }
         );
     }
+    public async Task<DashboardStatistics> GetDashboardStatsAsync(
+        CancellationToken ct = default)
+    {
+        var query = _db.Records
+            .AsNoTracking();
 
+
+        var totalRecords =
+            await query.CountAsync(ct);
+
+
+        // =========================================
+        // GENDER - DYNAMIC
+        // =========================================
+
+        var rawGenderGroups =
+            await query
+                .Where(r =>
+                    r.Gender != null &&
+                    r.Gender.Trim() != "")
+                .GroupBy(r => r.Gender)
+                .Select(g => new
+                {
+                    Gender = g.Key!,
+                    Count = g.Count()
+                })
+                .ToListAsync(ct);
+
+
+        var genderStats =
+            rawGenderGroups
+                .Select(g => new
+                {
+                    Gender = NormalizeText(g.Gender),
+                    g.Count
+                })
+                .Where(g =>
+                    !string.IsNullOrWhiteSpace(g.Gender))
+                .GroupBy(g => g.Gender)
+                .Select(g =>
+                    new GenderStatistic
+                    {
+                        Gender = g.Key,
+
+                        Count =
+                            g.Sum(x => x.Count),
+
+                        Percentage =
+                            totalRecords == 0
+                                ? 0
+                                : Math.Round(
+                                    g.Sum(x => x.Count)
+                                    * 100.0
+                                    / totalRecords,
+                                    1
+                                )
+                    })
+                .OrderByDescending(x => x.Count)
+                .ToList();
+
+
+        var knownGenderCount =
+            genderStats.Sum(x => x.Count);
+        var governorateGroups =
+    await query
+        .Where(r =>
+            r.Governorate != null &&
+            r.Governorate.Trim() != "")
+        .GroupBy(r =>
+            r.Governorate!.Trim())
+        .Select(g => new
+        {
+            Governorate = g.Key,
+            Count = g.Count()
+        })
+        .ToListAsync(ct);
+
+
+        var governorateStats =
+            governorateGroups
+                .Select(g =>
+                    new GovernorateStatistic
+                    {
+                        Governorate =
+                            g.Governorate,
+
+                        Count =
+                            g.Count,
+
+                        Percentage =
+                            totalRecords == 0
+                                ? 0
+                                : Math.Round(
+                                    g.Count * 100.0
+                                    / totalRecords,
+                                    1
+                                )
+                    })
+                .OrderByDescending(x => x.Count)
+                .ToList();
+
+
+        var knownGovernorateCount =
+            governorateStats.Sum(
+                x => x.Count
+            );
+
+
+        var unknownGovernorateCount =
+            Math.Max(
+                totalRecords -
+                knownGovernorateCount,
+                0
+            );
+
+        var unknownGenderCount =
+            Math.Max(
+                totalRecords - knownGenderCount,
+                0
+            );
+
+
+        // =========================================
+        // AGE RANGES
+        // =========================================
+
+        var today =
+            DateOnly.FromDateTime(
+                DateTime.UtcNow
+            );
+
+
+        var age16 =
+            today.AddYears(-16);
+
+        var age30 =
+            today.AddYears(-30);
+
+        var age40 =
+            today.AddYears(-40);
+
+        var age50 =
+            today.AddYears(-50);
+
+        var age60 =
+            today.AddYears(-60);
+
+        var age70 =
+            today.AddYears(-70);
+
+
+        var age0To15 =
+            await query.CountAsync(
+                r =>
+                    r.DateOfBirth != null &&
+                    r.DateOfBirth > age16,
+                ct
+            );
+
+
+        var age16To29 =
+            await query.CountAsync(
+                r =>
+                    r.DateOfBirth != null &&
+                    r.DateOfBirth <= age16 &&
+                    r.DateOfBirth > age30,
+                ct
+            );
+
+
+        var age30To39 =
+            await query.CountAsync(
+                r =>
+                    r.DateOfBirth != null &&
+                    r.DateOfBirth <= age30 &&
+                    r.DateOfBirth > age40,
+                ct
+            );
+
+
+        var age40To49 =
+            await query.CountAsync(
+                r =>
+                    r.DateOfBirth != null &&
+                    r.DateOfBirth <= age40 &&
+                    r.DateOfBirth > age50,
+                ct
+            );
+
+
+        var age50To59 =
+            await query.CountAsync(
+                r =>
+                    r.DateOfBirth != null &&
+                    r.DateOfBirth <= age50 &&
+                    r.DateOfBirth > age60,
+                ct
+            );
+
+
+        var age60To69 =
+            await query.CountAsync(
+                r =>
+                    r.DateOfBirth != null &&
+                    r.DateOfBirth <= age60 &&
+                    r.DateOfBirth > age70,
+                ct
+            );
+
+
+        var age70Plus =
+            await query.CountAsync(
+                r =>
+                    r.DateOfBirth != null &&
+                    r.DateOfBirth <= age70,
+                ct
+            );
+
+
+        var ageRanges =
+            new List<AgeRangeStatistic>
+            {
+            new()
+            {
+                Label = "0-15",
+                Count = age0To15
+            },
+
+            new()
+            {
+                Label = "16-29",
+                Count = age16To29
+            },
+
+            new()
+            {
+                Label = "30-39",
+                Count = age30To39
+            },
+
+            new()
+            {
+                Label = "40-49",
+                Count = age40To49
+            },
+
+            new()
+            {
+                Label = "50-59",
+                Count = age50To59
+            },
+
+            new()
+            {
+                Label = "60-69",
+                Count = age60To69
+            },
+
+            new()
+            {
+                Label = "70+",
+                Count = age70Plus
+            }
+            };
+
+
+        // =========================================
+        // LAST 6 MONTHS
+        // =========================================
+
+        var now =
+            DateTime.UtcNow;
+
+
+        var currentMonthStart =
+            new DateTime(
+                now.Year,
+                now.Month,
+                1,
+                0,
+                0,
+                0,
+                DateTimeKind.Utc
+            );
+
+
+        var recordsByMonth =
+            new List<MonthlyRecordStatistic>();
+
+
+        for (var i = 5; i >= 0; i--)
+        {
+            var monthStart =
+                currentMonthStart.AddMonths(-i);
+
+
+            var monthEnd =
+                monthStart.AddMonths(1);
+
+
+            var count =
+                await query.CountAsync(
+                    r =>
+                        r.CreatedAtUtc >= monthStart &&
+                        r.CreatedAtUtc < monthEnd,
+                    ct
+                );
+
+
+            recordsByMonth.Add(
+                new MonthlyRecordStatistic
+                {
+                    Month =
+                        monthStart.ToString("yyyy-MM"),
+
+                    Count = count
+                }
+            );
+        }
+
+
+        var addedThisMonth =
+            recordsByMonth.Count > 0
+                ? recordsByMonth[^1].Count
+                : 0;
+
+
+        return new DashboardStatistics
+        {
+            TotalRecords =
+         totalRecords,
+
+            UnknownGenderCount =
+         unknownGenderCount,
+
+            UnknownGovernorateCount =
+         unknownGovernorateCount,
+
+            AddedThisMonth =
+         addedThisMonth,
+
+            GenderStats =
+         genderStats,
+
+            GovernorateStats =
+         governorateStats,
+
+            AgeRanges =
+         ageRanges,
+
+            RecordsByMonth =
+         recordsByMonth
+        };
+    }
 
     // =====================================================
     // PAGINATION
@@ -744,6 +1093,29 @@ public class RecordRepository : IRecordRepository
             )
 
             .ToListAsync(ct);
+    }
+    private static string NormalizeText(
+    string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        return new string(
+            value
+                .Where(c =>
+                    System.Globalization
+                        .CharUnicodeInfo
+                        .GetUnicodeCategory(c)
+                    !=
+                    System.Globalization
+                        .UnicodeCategory
+                        .Format
+                )
+                .ToArray()
+        )
+        .Trim();
     }
 
 }

@@ -1,3 +1,4 @@
+using Ocr.Core.Services;
 using System;
 using System.Globalization;
 using System.Linq;
@@ -93,17 +94,25 @@ public class RecordsController : ControllerBase
     public async Task<ActionResult<RecordDto>> Create(
         [FromBody] CreateUpdateRecordDto dto)
     {
-        var created =
-            await _svc.CreateAsync(dto);
+        try
+        {
+            var created =
+                await _svc.CreateAsync(dto);
 
-        return CreatedAtAction(
-            nameof(GetOne),
-            new
-            {
-                id = created.Id
-            },
-            created
-        );
+            return CreatedAtAction(
+                nameof(GetOne),
+                new
+                {
+                    id = created.Id
+                },
+                created
+            );
+        }
+        catch (NationalIdValidationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+
     }
 
 
@@ -116,15 +125,23 @@ public class RecordsController : ControllerBase
         int id,
         [FromBody] CreateUpdateRecordDto dto)
     {
-        var updated =
-            await _svc.UpdateAsync(
-                id,
-                dto
-            );
+        try
+        {
+            var updated =
+                await _svc.UpdateAsync(
+                    id,
+                    dto
+                );
 
-        return updated is null
-            ? NotFound()
-            : Ok(updated);
+            return updated is null
+                ? NotFound()
+                : Ok(updated);
+        }
+        catch (NationalIdValidationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+
     }
 
 

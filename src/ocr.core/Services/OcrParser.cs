@@ -11,42 +11,119 @@ namespace Ocr.Core.Services
     {
         private static readonly JsonSerializerOptions Opt = new() { PropertyNameCaseInsensitive = true };
 
-        public FrontOcrResult ParseFront(OcrExtraction raw)
+        public FrontOcrResult ParseFront(
+            OcrExtraction raw)
         {
-            var dict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(raw.RawJson, Opt)
-            ?? new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
+            var dict =
+                JsonSerializer.Deserialize<
+                    Dictionary<string, JsonElement>
+                >(
+                    raw.RawJson,
+                    Opt
+                )
+                ??
+                new Dictionary<
+                    string,
+                    JsonElement
+                >(
+                    StringComparer.OrdinalIgnoreCase
+                );
 
-            string? Get(params string[] keys)
+
+            string? Get(
+                params string[] keys)
             {
                 foreach (var k in keys)
-                    if (dict.TryGetValue(k, out var v))
-                        return v.ValueKind == JsonValueKind.String ? v.GetString() : v.ToString();
+                {
+                    if (
+                        dict.TryGetValue(
+                            k,
+                            out var v
+                        )
+                    )
+                    {
+                        return
+                            v.ValueKind ==
+                            JsonValueKind.String
+
+                                ? v.GetString()
+
+                                : v.ToString();
+                    }
+                }
+
                 return null;
             }
 
 
+            var name =
+                Clean(
+                    Get(
+                        "name",
+                        "Name"
+                    )
+                );
 
 
-            // Map Python keys → our DTO
-            var name = Clean(Get("name", "Name"));
-            var address = Clean(Get("address", "Address"));
-            var idRaw = Get("ID", "Id", "NationalID", "national_id", "nationalId");
-            var dob = Clean(Get("DOB", "dob", "dateOfBirth"));
+            var address =
+                Clean(
+                    Get(
+                        "address",
+                        "Address"
+                    )
+                );
 
-            var nationalId = OnlyAsciiDigits(ConvertArabicDigits(idRaw));
-            int? age = TryCalcAge(dob);
 
-          
+            var governorate =
+                Clean(
+                    Get(
+                        "governorate",
+                        "Governorate"
+                    )
+                );
+
+
+            var idRaw =
+                Get(
+                    "ID",
+                    "Id",
+                    "NationalID",
+                    "national_id",
+                    "nationalId"
+                );
+
+
+            var dob =
+                Clean(
+                    Get(
+                        "DOB",
+                        "dob",
+                        "dateOfBirth"
+                    )
+                );
+
+
+            var nationalId =
+                OnlyAsciiDigits(
+                    ConvertArabicDigits(
+                        idRaw
+                    )
+                );
+
+
+            int? age =
+                TryCalcAge(dob);
+
 
             return new FrontOcrResult(
                 Name: name,
                 NationalId: nationalId,
                 Address: address,
+                Governorate: governorate,
                 Dob: dob,
                 Age: age
             );
         }
-
         public BackOcrResult ParseBack(OcrExtraction raw)
         {
             using var doc = JsonDocument.Parse(raw.RawJson);
@@ -77,7 +154,8 @@ namespace Ocr.Core.Services
                 Religion: religion,
                 MaritalStatus: marital,
                 HusbandName: husbandName,
-                ExpiryDate: expiry
+                ExpiryDate: expiry,
+                NationalId: ConvertArabicDigits(Get("nationalId"))?.Trim()
             );
         }
 
